@@ -1,0 +1,166 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Iced",
+  "projectDescription": "A cross-platform GUI library for Rust, inspired by Elm",
+  "theme": "aspen",
+  "primaryColor": "#1f56fc",
+  "lightColor": "#83b8fc",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/state-and-messages",
+              "concepts/view-and-update",
+              "concepts/elements-and-widgets"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/layout",
+              "guides/styling",
+              "guides/theming",
+              "guides/tasks",
+              "guides/subscriptions",
+              "guides/custom-widgets"
+            ]
+          },
+          {
+            "group": "Widgets",
+            "pages": [
+              "widgets/overview",
+              "widgets/button",
+              "widgets/text",
+              "widgets/text-input",
+              "widgets/container",
+              "widgets/row-and-column",
+              "widgets/scrollable",
+              "widgets/canvas",
+              "widgets/all-widgets"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/renderers",
+              "advanced/custom-renderers",
+              "advanced/performance",
+              "advanced/debugging"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/core/overview",
+              "api/core/element",
+              "api/core/alignment",
+              "api/core/length",
+              "api/core/color"
+            ]
+          },
+          {
+            "group": "Application",
+            "pages": [
+              "api/application/overview",
+              "api/application/run",
+              "api/application/settings"
+            ]
+          },
+          {
+            "group": "Widget",
+            "pages": [
+              "api/widget/overview",
+              "api/widget/button",
+              "api/widget/checkbox",
+              "api/widget/text-input",
+              "api/widget/slider",
+              "api/widget/container",
+              "api/widget/scrollable"
+            ]
+          },
+          {
+            "group": "Runtime",
+            "pages": [
+              "api/runtime/task",
+              "api/runtime/subscription",
+              "api/runtime/clipboard",
+              "api/runtime/window"
+            ]
+          },
+          {
+            "group": "Theme",
+            "pages": [
+              "api/theme/overview",
+              "api/theme/built-in-themes",
+              "api/theme/custom-themes",
+              "api/theme/palette"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Examples",
+            "pages": [
+              "examples/overview",
+              "examples/counter",
+              "examples/todo",
+              "examples/styling",
+              "examples/custom-widget"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Cross-platform support (Windows, macOS, Linux, Web)",
+    "Elm-inspired architecture with type-safe reactive programming",
+    "40+ built-in widgets (buttons, text inputs, scrollables, canvas, etc.)",
+    "GPU-accelerated rendering with wgpu and software fallback with tiny-skia",
+    "Flexible theming and styling system",
+    "Async task and subscription support",
+    "Custom widget creation",
+    "Responsive layout system",
+    "Debug tooling with time-travel debugging",
+    "Modular architecture with renderer-agnostic runtime"
+  ],
+  "publicApiSurface": [
+    "iced::run - Main entry point for simple applications",
+    "iced::application - Builder for complex applications",
+    "iced::widget - Built-in widget library (button, text, container, etc.)",
+    "iced::Element - Generic widget type",
+    "iced::Task - Async task system",
+    "iced::Subscription - Passive data subscription system",
+    "iced::Theme - Theming and styling",
+    "iced::Color - Color manipulation",
+    "iced::Length - Widget sizing (Fill, Shrink, Fixed)",
+    "iced::Alignment - Widget alignment",
+    "iced::window - Window management",
+    "iced::clipboard - Clipboard operations",
+    "iced::keyboard - Keyboard event handling",
+    "iced::mouse - Mouse event handling",
+    "iced::font - Font loading and management"
+  ]
+}
