@@ -1,0 +1,442 @@
+---
+title: Row and Column
+description: Layout widgets for arranging children horizontally and vertically
+---
+
+`Row` and `Column` are the fundamental layout widgets in Iced. They arrange their children in a linear fashion - `Row` horizontally and `Column` vertically.
+
+## Row Widget
+
+Distributes children horizontally from left to right.
+
+### Basic Usage
+
+```rust
+use iced::widget::row;
+
+fn view() -> Element<Message> {
+    row![
+        text("Left"),
+        button("Center"),
+        text("Right"),
+    ]
+    .into()
+}
+```
+
+### Row Methods
+
+#### `new()`
+
+Creates an empty row.
+
+```rust
+let row = Row::new();
+```
+
+#### `with_children(children: impl IntoIterator<Item = Element>)`
+
+Creates a row with the given children.
+
+```rust
+Row::with_children(vec![text("A").into(), text("B").into()])
+```
+
+#### `spacing(amount: impl Into<Pixels>)`
+
+Sets horizontal spacing between elements.
+
+```rust
+row!["A", "B", "C"].spacing(20)
+```
+
+#### `padding(padding: impl Into<Padding>)`
+
+Sets padding around all children.
+
+```rust
+row![button("1"), button("2")].padding(10)
+```
+
+#### `width(width: impl Into<Length>)`
+
+Sets the row width.
+
+```rust
+row![content].width(Length::Fill)
+```
+
+#### `height(height: impl Into<Length>)`
+
+Sets the row height.
+
+```rust
+row![items].height(50)
+```
+
+#### `align_y(align: alignment::Vertical)`
+
+Sets vertical alignment of children.
+
+```rust
+use iced::alignment;
+
+row![
+    text("Small"),
+    text("Large").size(30),
+]
+.align_y(alignment::Vertical::Center)
+```
+
+#### `clip(clip: bool)`
+
+Sets whether children should be clipped on overflow.
+
+```rust
+row![many_items].clip(true)
+```
+
+#### `push(child: impl Into<Element>)`
+
+Adds a child to the row.
+
+```rust
+let mut row = Row::new();
+row = row.push(text("First"));
+row = row.push(button("Second"));
+```
+
+#### `extend(children: impl IntoIterator<Item = Element>)`
+
+Adds multiple children to the row.
+
+```rust
+Row::new().extend(vec![text("A").into(), text("B").into()])
+```
+
+### Wrapping Row
+
+```rust
+row![/* many items */]
+    .wrap()  // Creates a wrapping row
+    .vertical_spacing(10)
+    .align_x(alignment::Horizontal::Center)
+```
+
+## Column Widget
+
+Distributes children vertically from top to bottom.
+
+### Basic Usage
+
+```rust
+use iced::widget::column;
+
+fn view() -> Element<Message> {
+    column![
+        text("Top"),
+        button("Middle"),
+        text("Bottom"),
+    ]
+    .into()
+}
+```
+
+### Column Methods
+
+#### `new()`
+
+Creates an empty column.
+
+```rust
+let col = Column::new();
+```
+
+#### `with_children(children: impl IntoIterator<Item = Element>)`
+
+Creates a column with the given children.
+
+```rust
+Column::with_children(vec![text("A").into(), text("B").into()])
+```
+
+#### `spacing(amount: impl Into<Pixels>)`
+
+Sets vertical spacing between elements.
+
+```rust
+column!["A", "B", "C"].spacing(15)
+```
+
+#### `padding(padding: impl Into<Padding>)`
+
+Sets padding around all children.
+
+```rust
+column![items].padding(20)
+```
+
+#### `width(width: impl Into<Length>)`
+
+Sets the column width.
+
+```rust
+column![content].width(Length::Fill)
+```
+
+#### `height(height: impl Into<Length>)`
+
+Sets the column height.
+
+```rust
+column![items].height(Length::Fill)
+```
+
+#### `max_width(max_width: impl Into<Pixels>)`
+
+Sets the maximum width.
+
+```rust
+column![text_content]
+    .width(Length::Fill)
+    .max_width(600)
+```
+
+#### `align_x(align: alignment::Horizontal)`
+
+Sets horizontal alignment of children.
+
+```rust
+use iced::alignment;
+
+column![
+    text("Centered"),
+    button("Also centered"),
+]
+.align_x(alignment::Horizontal::Center)
+```
+
+#### `clip(clip: bool)`
+
+Sets whether children should be clipped on overflow.
+
+```rust
+column![many_items].clip(true)
+```
+
+#### `push(child: impl Into<Element>)`
+
+Adds a child to the column.
+
+```rust
+let mut col = Column::new();
+col = col.push(text("First"));
+col = col.push(button("Second"));
+```
+
+### Wrapping Column
+
+```rust
+column![/* many items */]
+    .wrap()  // Creates a wrapping column
+    .horizontal_spacing(10)
+    .align_y(alignment::Vertical::Center)
+```
+
+## Using the Macros
+
+Both widgets have convenient macros for quick construction:
+
+```rust
+// Row macro
+row![
+    text("Item 1"),
+    text("Item 2"),
+    button("Item 3"),
+]
+
+// Column macro
+column![
+    text("Line 1"),
+    text("Line 2"),
+    button("Line 3"),
+]
+```
+
+## Common Patterns
+
+### Navigation Bar
+
+```rust
+use iced::widget::{button, row, text};
+use iced::{alignment, Length};
+
+fn navbar() -> Element<Message> {
+    row![
+        text("My App").size(20),
+        row![
+            button("Home").on_press(Message::GoHome),
+            button("About").on_press(Message::GoAbout),
+            button("Settings").on_press(Message::GoSettings),
+        ]
+        .spacing(10),
+    ]
+    .width(Length::Fill)
+    .padding(10)
+    .align_y(alignment::Vertical::Center)
+    .into()
+}
+```
+
+### Form Layout
+
+```rust
+use iced::widget::{button, column, text, text_input};
+use iced::Length;
+
+fn form(username: &str, email: &str) -> Element<Message> {
+    column![
+        text("Username"),
+        text_input("Enter username", username)
+            .on_input(Message::UsernameChanged)
+            .width(Length::Fill),
+        
+        text("Email"),
+        text_input("Enter email", email)
+            .on_input(Message::EmailChanged)
+            .width(Length::Fill),
+        
+        button("Submit")
+            .on_press(Message::Submit)
+            .width(Length::Fill),
+    ]
+    .spacing(10)
+    .max_width(400)
+    .into()
+}
+```
+
+### Sidebar Layout
+
+```rust
+use iced::widget::{column, container, row};
+use iced::Length;
+
+fn layout(sidebar_items: Vec<Element<Message>>, content: Element<Message>) -> Element<Message> {
+    row![
+        // Sidebar
+        container(
+            column(sidebar_items)
+                .spacing(5)
+                .padding(10)
+        )
+        .width(200)
+        .height(Length::Fill),
+        
+        // Main content
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(20),
+    ]
+    .into()
+}
+```
+
+### Toolbar with Groups
+
+```rust
+use iced::widget::{button, row};
+use iced::Length;
+
+fn toolbar() -> Element<Message> {
+    row![
+        // File operations
+        row![
+            button("New").on_press(Message::New),
+            button("Open").on_press(Message::Open),
+            button("Save").on_press(Message::Save),
+        ]
+        .spacing(5),
+        
+        // Edit operations  
+        row![
+            button("Cut").on_press(Message::Cut),
+            button("Copy").on_press(Message::Copy),
+            button("Paste").on_press(Message::Paste),
+        ]
+        .spacing(5),
+    ]
+    .spacing(20)
+    .padding(5)
+    .into()
+}
+```
+
+### Centered Content
+
+```rust
+use iced::widget::{column, container};
+use iced::{alignment, Length};
+
+fn centered_dialog(content: Element<Message>) -> Element<Message> {
+    container(
+        column![content]
+            .width(Length::Shrink)
+            .align_x(alignment::Horizontal::Center)
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .center(Length::Fill)
+    .into()
+}
+```
+
+### Grid-like Layout
+
+```rust
+use iced::widget::{button, column, row};
+
+fn button_grid() -> Element<Message> {
+    column![
+        row![
+            button("1").on_press(Message::Press(1)),
+            button("2").on_press(Message::Press(2)),
+            button("3").on_press(Message::Press(3)),
+        ]
+        .spacing(10),
+        
+        row![
+            button("4").on_press(Message::Press(4)),
+            button("5").on_press(Message::Press(5)),
+            button("6").on_press(Message::Press(6)),
+        ]
+        .spacing(10),
+        
+        row![
+            button("7").on_press(Message::Press(7)),
+            button("8").on_press(Message::Press(8)),
+            button("9").on_press(Message::Press(9)),
+        ]
+        .spacing(10),
+    ]
+    .spacing(10)
+    .into()
+}
+```
+
+## Tips and Best Practices
+
+1. **Use macros for readability** - `row![]` and `column![]` are more concise
+2. **Set consistent spacing** - Use the same spacing values throughout your app
+3. **Use Length::Fill wisely** - It expands to fill available space
+4. **Combine with containers** - Add padding and styling with containers
+5. **Mind the alignment** - Use `align_x` and `align_y` for proper positioning
+6. **Use wrapping for responsive layouts** - `.wrap()` creates flexible layouts
+
+## Related Widgets
+
+- [Container](/widgets/container) - For single child with alignment
+- [Scrollable](/widgets/scrollable) - For scrollable content
+- [Grid](/widgets/all-widgets) - For proper grid layouts
+- [Stack](/widgets/all-widgets) - For layered content

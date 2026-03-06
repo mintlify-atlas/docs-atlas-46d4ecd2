@@ -1,0 +1,201 @@
+---
+title: Element
+description: A generic widget wrapper for building composable user interfaces
+---
+
+The `Element` type is a generic widget wrapper that allows you to build composable user interfaces without leaking implementation details in your view logic.
+
+## Type Signature
+
+```rust
+pub struct Element<'a, Message, Theme, Renderer> {
+    widget: Box<dyn Widget<Message, Theme, Renderer> + 'a>,
+}
+```
+
+### Type Parameters
+
+<ParamField path="'a" type="lifetime">
+  The lifetime of the element
+</ParamField>
+
+<ParamField path="Message" type="type">
+  The message type produced by user interactions
+</ParamField>
+
+<ParamField path="Theme" type="type">
+  The theme type used for styling
+</ParamField>
+
+<ParamField path="Renderer" type="type">
+  The renderer type used for drawing
+</ParamField>
+
+## Creating Elements
+
+### new
+
+Creates a new `Element` containing the given widget.
+
+```rust
+pub fn new(widget: impl Widget<Message, Theme, Renderer> + 'a) -> Self
+where
+    Renderer: crate::Renderer,
+```
+
+**Example:**
+
+```rust
+use iced_core::Element;
+
+let element = Element::new(my_widget);
+```
+
+Most built-in widgets implement `Into<Element>`, so you can often convert them directly:
+
+```rust
+let element: Element<Message> = my_button.into();
+```
+
+## Accessing the Widget
+
+### as_widget
+
+Returns a reference to the widget contained in the element.
+
+```rust
+pub fn as_widget(&self) -> &dyn Widget<Message, Theme, Renderer>
+```
+
+### as_widget_mut
+
+Returns a mutable reference to the widget contained in the element.
+
+```rust
+pub fn as_widget_mut(&mut self) -> &mut dyn Widget<Message, Theme, Renderer>
+```
+
+## Message Transformation
+
+### map
+
+Applies a transformation to the produced message of the element. This is useful for building composable UIs where different components produce different message types.
+
+```rust
+pub fn map<B>(self, f: impl Fn(Message) -> B + 'a) -> Element<'a, B, Theme, Renderer>
+where
+    Message: 'a,
+    Theme: 'a,
+    Renderer: crate::Renderer + 'a,
+    B: 'a,
+```
+
+<ParamField path="f" type="impl Fn(Message) -> B + 'a">
+  A function that transforms messages of type `Message` into messages of type `B`
+</ParamField>
+
+**Example: Building a Multi-Counter App**
+
+Imagine you have a counter component that produces `counter::Message`, but you want to display multiple counters. You can use `map` to compose them:
+
+```rust
+use iced::widget::row;
+use iced::{Element, Function};
+
+struct ManyCounters {
+    counters: Vec<Counter>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Message {
+    Counter(usize, counter::Message),
+}
+
+impl ManyCounters {
+    pub fn view(&self) -> Element<Message> {
+        row(
+            self.counters
+                .iter()
+                .map(Counter::view)
+                .enumerate()
+                .map(|(index, counter)| {
+                    // Transform Element<counter::Message> into Element<Message>
+                    counter.map(Message::Counter.with(index))
+                }),
+        )
+        .into()
+    }
+}
+```
+
+In your update function, you can then delegate to the specific counter:
+
+```rust
+impl ManyCounters {
+    pub fn update(&mut self, message: Message) {
+        match message {
+            Message::Counter(index, counter_msg) => {
+                if let Some(counter) = self.counters.get_mut(index) {
+                    counter.update(counter_msg);
+                }
+            }
+        }
+    }
+}
+```
+
+## Debugging
+
+### explain
+
+Marks the element as "to-be-explained". The renderer will draw the layout bounds graphically, which is very useful for debugging layout issues.
+
+```rust
+pub fn explain<C: Into<Color>>(self, color: C) -> Element<'a, Message, Theme, Renderer>
+where
+    Message: 'a,
+    Theme: 'a,
+    Renderer: crate::Renderer + 'a,
+```
+
+<ParamField path="color" type="C: Into<Color>">
+  The color to use for drawing the layout bounds
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::{Element, Color};
+
+let element = my_widget.explain(Color::from_rgb(1.0, 0.0, 0.0));
+```
+
+## Converting from Option
+
+You can convert `Option<T>` where `T: Into<Element>` directly into an `Element`. If the option is `None`, an empty element with zero size will be created:
+
+```rust
+let maybe_widget: Option<Button> = Some(button);
+let element: Element<Message> = maybe_widget.into();
+```
+
+## Key Concepts
+
+### Type Erasure
+
+`Element` uses trait objects (`Box<dyn Widget>`) to erase the concrete widget type. This allows you to:
+
+- Return different widget types from the same function
+- Store heterogeneous widgets in collections
+- Build flexible and composable UIs
+
+### Composition
+
+`Element` enables true component composition in Iced. Each component can:
+
+- Define its own message type
+- Manage its own state
+- Be reused independently
+- Transform messages to integrate with parent components
+
+This architectural pattern is fundamental to building maintainable Iced applications.

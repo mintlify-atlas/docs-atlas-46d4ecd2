@@ -1,80 +1,243 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Build your first Iced application in minutes with this step-by-step guide. Create a working counter app to learn the basics.
 ---
 
-## Get started in three steps
-
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+Let's build your first Iced application! You'll create a simple counter with increment and decrement buttons to learn the fundamentals of Iced's architecture.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+Make sure you have [Rust installed](/installation#prerequisites) before starting. You'll need Rust 1.92 or later.
 </Note>
+
+## What You'll Build
+
+A counter application that displays a number and two buttons to increment and decrement it. This demonstrates Iced's core concepts: state management, message handling, and reactive UI updates.
+
+<Steps>
+
+<Step title="Create a new project">
+
+Create a new Rust binary project:
+
+```bash
+cargo new counter
+cd counter
+```
+
+</Step>
+
+<Step title="Add Iced dependency">
+
+Open `Cargo.toml` and add Iced:
+
+```toml Cargo.toml
+[package]
+name = "counter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+iced = "0.15.0-dev"
+```
+
+<Note>
+The default features include the `wgpu` renderer and `thread-pool` executor, which work for most applications. See [Installation](/installation) for other configurations.
+</Note>
+
+</Step>
+
+<Step title="Define your application state">
+
+Open `src/main.rs` and define the state of your application. For a counter, you only need to track a single number:
+
+```rust src/main.rs
+#[derive(Default)]
+struct Counter {
+    value: i64,
+}
+```
+
+The `Default` trait allows Iced to initialize your application with `Counter { value: 0 }`.
+
+</Step>
+
+<Step title="Define your messages">
+
+Messages represent the events your application can handle. For a counter, you need increment and decrement actions:
+
+```rust src/main.rs
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    Increment,
+    Decrement,
+}
+```
+
+</Step>
+
+<Step title="Implement the update logic">
+
+The `update` method handles messages and modifies your application state:
+
+```rust src/main.rs
+impl Counter {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => {
+                self.value += 1;
+            }
+            Message::Decrement => {
+                self.value -= 1;
+            }
+        }
+    }
+}
+```
+
+</Step>
+
+<Step title="Implement the view logic">
+
+The `view` method describes how your application should look. It returns a layout of widgets that can produce messages:
+
+```rust src/main.rs
+use iced::widget::{button, column, text, Column};
+use iced::Center;
+
+impl Counter {
+    fn view(&self) -> Column<'_, Message> {
+        column![
+            button("Increment").on_press(Message::Increment),
+            text(self.value).size(50),
+            button("Decrement").on_press(Message::Decrement)
+        ]
+        .padding(20)
+        .align_x(Center)
+    }
+}
+```
+
+The `column!` macro creates a vertical layout. Each button produces a message when pressed, and the text widget displays the current counter value.
+
+</Step>
+
+<Step title="Run your application">
+
+Add the main function to run your application:
+
+```rust src/main.rs
+pub fn main() -> iced::Result {
+    iced::run(Counter::update, Counter::view)
+}
+```
+
+`iced::run` starts your application by taking your `update` and `view` functions. It automatically:
+- Creates a window
+- Renders your UI
+- Processes user interactions
+- Calls your `update` method when buttons are clicked
+- Re-renders when state changes
+
+</Step>
+
+<Step title="Build and run">
+
+Run your application:
+
+```bash
+cargo run
+```
+
+You should see a window with your counter! Click the buttons to see the number change.
+
+</Step>
+
+</Steps>
+
+## Complete Code
+
+Here's the full `src/main.rs` file:
+
+```rust src/main.rs
+use iced::widget::{button, column, text, Column};
+use iced::Center;
+
+pub fn main() -> iced::Result {
+    iced::run(Counter::update, Counter::view)
+}
+
+#[derive(Default)]
+struct Counter {
+    value: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    Increment,
+    Decrement,
+}
+
+impl Counter {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => {
+                self.value += 1;
+            }
+            Message::Decrement => {
+                self.value -= 1;
+            }
+        }
+    }
+
+    fn view(&self) -> Column<'_, Message> {
+        column![
+            button("Increment").on_press(Message::Increment),
+            text(self.value).size(50),
+            button("Decrement").on_press(Message::Decrement)
+        ]
+        .padding(20)
+        .align_x(Center)
+    }
+}
+```
+
+## Understanding the Architecture
+
+This counter demonstrates **The Elm Architecture** that Iced follows:
+
+1. **State** (`Counter`) - Holds your application data
+2. **Messages** (`Message`) - Represent events that can change state
+3. **Update logic** (`update`) - Handles messages and modifies state
+4. **View logic** (`view`) - Renders UI based on current state
+
+When you click a button:
+1. The button produces a `Message::Increment` or `Message::Decrement`
+2. Iced calls your `update` method with that message
+3. Your `update` method modifies the state
+4. Iced calls your `view` method to re-render the UI
+5. You see the updated counter value
+
+This unidirectional data flow makes your application predictable and easy to reason about.
+
+## Next Steps
+
+Now that you've built your first Iced application, explore more concepts:
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/concepts/architecture">
+    Deep dive into The Elm Architecture and how Iced works
+  </Card>
+  <Card title="Widgets" icon="cube" href="/widgets/overview">
+    Learn about available widgets and how to use them
+  </Card>
+  <Card title="Styling" icon="paintbrush" href="/guides/styling">
+    Customize the appearance of your application
+  </Card>
+  <Card title="Tasks" icon="list-check" href="/guides/tasks">
+    Handle async operations with tasks
+  </Card>
+</CardGroup>
+
+<Tip>
+Enable debug mode to see performance metrics and inspect your application. Add the `debug` feature to your `Cargo.toml` and press **F12** while running your app.
+</Tip>

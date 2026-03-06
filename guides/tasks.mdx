@@ -1,0 +1,447 @@
+---
+title: Tasks
+description: Perform asynchronous work and interact with the Iced runtime using tasks
+---
+
+Tasks are Iced's way of performing asynchronous work. They can run futures, interact with the runtime, and chain operations together.
+
+## Basic Usage
+
+The `update` function can optionally return a `Task`:
+
+```rust
+use iced::Task;
+
+enum Message {
+    FetchWeather,
+    WeatherFetched(Weather),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::FetchWeather => {
+            Task::perform(
+                fetch_weather(),
+                Message::WeatherFetched,
+            )
+        }
+        Message::WeatherFetched(weather) => {
+            state.weather = Some(weather);
+            Task::none()
+        }
+    }
+}
+
+async fn fetch_weather() -> Weather {
+    // Fetch weather data from API
+    // ...
+}
+```
+
+## Task::perform
+
+`Task::perform` runs an async function and maps its result to a message:
+
+```rust
+Task::perform(
+    async { /* async operation */ },
+    |result| Message::OperationComplete(result)
+)
+```
+
+## Task::none
+
+When no asynchronous work is needed:
+
+```rust
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::Increment => {
+            state.counter += 1;
+            Task::none()  // No async work needed
+        }
+    }
+}
+```
+
+## Batching Tasks
+
+Run multiple tasks concurrently:
+
+```rust
+Task::batch(vec![
+    Task::perform(fetch_weather(), Message::WeatherFetched),
+    Task::perform(fetch_news(), Message::NewsFetched),
+    Task::perform(fetch_user(), Message::UserFetched),
+])
+```
+
+## Chaining Tasks
+
+Execute tasks sequentially:
+
+```rust
+Task::perform(authenticate(), Message::Authenticated)
+    .chain(Task::perform(fetch_profile(), Message::ProfileFetched))
+```
+
+## Mapping Tasks
+
+Transform the message produced by a task:
+
+```rust
+let task: Task<SubMessage> = sub_component.update(message);
+
+// Map to parent message type
+task.map(Message::SubComponent)
+```
+
+## Task with Function
+
+Use `Function::with` to curry message constructors:
+
+```rust
+use iced::Function;
+
+Task::perform(
+    download(url),
+    Message::DownloadUpdated.with(id)
+)
+```
+
+This is equivalent to:
+
+```rust
+Task::perform(
+    download(url),
+    |result| Message::DownloadUpdated(id, result)
+)
+```
+
+## Abortable Tasks
+
+Create tasks that can be cancelled:
+
+```rust
+use iced::task;
+
+struct State {
+    download_task: Option<task::Handle>,
+}
+
+enum Message {
+    StartDownload,
+    CancelDownload,
+    DownloadProgress(Progress),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::StartDownload => {
+            let (task, handle) = Task::perform(
+                download_file(),
+                Message::DownloadProgress
+            ).abortable();
+            
+            state.download_task = Some(handle.abort_on_drop());
+            task
+        }
+        Message::CancelDownload => {
+            state.download_task = None;  // Drops handle, aborting task
+            Task::none()
+        }
+        Message::DownloadProgress(progress) => {
+            // Handle progress
+            Task::none()
+        }
+    }
+}
+```
+
+## Sipping from Streams
+
+Process stream items as they arrive:
+
+```rust
+use iced::Task;
+
+enum Message {
+    StartDownload,
+    DownloadProgress(Progress),
+    DownloadFinished(Result<(), Error>),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::StartDownload => {
+            let (task, handle) = Task::sip(
+                download(url),
+                Message::DownloadProgress,  // Called for each stream item
+                Message::DownloadFinished,   // Called when stream ends
+            ).abortable();
+            
+            state.download_task = Some(handle.abort_on_drop());
+            task
+        }
+        Message::DownloadProgress(progress) => {
+            state.progress = progress.percent;
+            Task::none()
+        }
+        Message::DownloadFinished(result) => {
+            state.download_task = None;
+            if result.is_ok() {
+                state.status = Status::Complete;
+            } else {
+                state.status = Status::Error;
+            }
+            Task::none()
+        }
+    }
+}
+```
+
+## Runtime Interaction
+
+Tasks can interact with the Iced runtime:
+
+### Window Operations
+
+```rust
+use iced::window;
+
+// Change window settings
+window::resize(window::Id::MAIN, Size::new(800, 600))
+
+// Close a window
+window::close(window_id)
+
+// Open a new window
+window::open(window::Settings::default())
+
+// Maximize/minimize
+window::maximize(window_id, true)
+window::minimize(window_id, true)
+```
+
+### Widget Operations
+
+```rust
+use iced::widget;
+
+// Focus next widget
+widget::operation::focus_next()
+
+// Focus specific widget
+widget::operation::focus_widget(widget_id)
+
+// Query widget bounds
+widget::selector::find(|bounds| {
+    // Check bounds...
+})
+```
+
+### Clipboard Operations
+
+```rust
+use iced::clipboard;
+
+// Read from clipboard
+clipboard::read_text().then(|text| {
+    Task::done(Message::ClipboardRead(text))
+})
+
+// Write to clipboard
+clipboard::write("Hello, clipboard!")
+```
+
+## Task Composition Example
+
+Here's a complete example showing task composition:
+
+```rust
+use iced::{Element, Task, Function};
+use iced::widget::{button, column, progress_bar, text};
+
+pub fn main() -> iced::Result {
+    iced::application(Example::default, Example::update, Example::view)
+        .run()
+}
+
+#[derive(Debug)]
+struct Example {
+    downloads: Vec<Download>,
+    last_id: usize,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Add,
+    Download(usize),
+    DownloadUpdated(usize, Update),
+}
+
+#[derive(Debug, Clone)]
+enum Update {
+    Progress(f32),
+    Finished(Result<(), String>),
+}
+
+impl Example {
+    fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::Add => {
+                self.last_id += 1;
+                self.downloads.push(Download::new(self.last_id));
+                Task::none()
+            }
+            Message::Download(index) => {
+                let Some(download) = self.downloads.get_mut(index) else {
+                    return Task::none();
+                };
+
+                let task = download.start();
+                task.map(Message::DownloadUpdated.with(index))
+            }
+            Message::DownloadUpdated(id, update) => {
+                if let Some(download) = self.downloads
+                    .iter_mut()
+                    .find(|d| d.id == id)
+                {
+                    download.update(update);
+                }
+                Task::none()
+            }
+        }
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        let downloads = column(
+            self.downloads
+                .iter()
+                .map(Download::view)
+        )
+        .push(
+            button("Add download")
+                .on_press(Message::Add)
+        )
+        .spacing(20);
+
+        downloads.into()
+    }
+}
+
+impl Default for Example {
+    fn default() -> Self {
+        Self {
+            downloads: vec![Download::new(0)],
+            last_id: 0,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Download {
+    id: usize,
+    state: DownloadState,
+}
+
+#[derive(Debug)]
+enum DownloadState {
+    Idle,
+    Downloading { progress: f32 },
+    Finished,
+    Errored,
+}
+
+impl Download {
+    fn new(id: usize) -> Self {
+        Self {
+            id,
+            state: DownloadState::Idle,
+        }
+    }
+
+    fn start(&mut self) -> Task<Update> {
+        match self.state {
+            DownloadState::Idle | DownloadState::Finished | DownloadState::Errored => {
+                self.state = DownloadState::Downloading { progress: 0.0 };
+                
+                Task::perform(
+                    download_file(),
+                    |result| Update::Finished(result)
+                )
+            }
+            DownloadState::Downloading { .. } => Task::none(),
+        }
+    }
+
+    fn update(&mut self, update: Update) {
+        match update {
+            Update::Progress(progress) => {
+                if let DownloadState::Downloading { progress: p } = &mut self.state {
+                    *p = progress;
+                }
+            }
+            Update::Finished(result) => {
+                self.state = if result.is_ok() {
+                    DownloadState::Finished
+                } else {
+                    DownloadState::Errored
+                };
+            }
+        }
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        let progress = match self.state {
+            DownloadState::Idle => 0.0,
+            DownloadState::Downloading { progress } => progress,
+            DownloadState::Finished => 100.0,
+            DownloadState::Errored => 0.0,
+        };
+
+        column![
+            progress_bar(0.0..=100.0, progress),
+            button("Start").on_press(Message::Download(self.id)),
+        ]
+        .spacing(10)
+        .into()
+    }
+}
+
+async fn download_file() -> Result<(), String> {
+    // Simulate download
+    Ok(())
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Task::none() for synchronous updates">
+    When your update doesn't need to perform any async work, return `Task::none()` instead of creating unnecessary tasks.
+  </Accordion>
+
+  <Accordion title="Batch independent tasks">
+    Use `Task::batch()` to run multiple independent async operations concurrently rather than chaining them sequentially.
+  </Accordion>
+
+  <Accordion title="Make tasks abortable for long operations">
+    For long-running operations like downloads or network requests, use `.abortable()` and store the handle so users can cancel them.
+  </Accordion>
+
+  <Accordion title="Use Task::map for composability">
+    When working with nested components, use `.map()` to transform child messages to parent messages for better composition.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Subscriptions" icon="rss" href="/guides/subscriptions">
+    Learn about passive data sources
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/concepts/architecture">
+    Understand the application architecture
+  </Card>
+</CardGroup>

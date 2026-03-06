@@ -1,0 +1,270 @@
+---
+title: Button
+description: Interactive button widget for user actions
+---
+
+The `Button` widget creates clickable buttons that produce messages when pressed. Buttons are one of the most common interactive elements in GUI applications.
+
+## Basic Usage
+
+```rust
+use iced::widget::button;
+
+#[derive(Clone, Debug)]
+enum Message {
+    ButtonPressed,
+}
+
+fn view(state: &State) -> Element<Message> {
+    button("Click me!")
+        .on_press(Message::ButtonPressed)
+        .into()
+}
+```
+
+## Button States
+
+A button without an `on_press` handler is automatically disabled:
+
+```rust
+// Disabled button
+button("I am disabled!")
+
+// Conditionally enabled
+button("Maybe enabled")
+    .on_press_maybe(if condition {
+        Some(Message::Action)
+    } else {
+        None
+    })
+```
+
+## Builder Methods
+
+### `on_press(message: Message)`
+
+Sets the message produced when clicked. Required for an enabled button.
+
+```rust
+button("Submit").on_press(Message::Submit)
+```
+
+### `on_press_with(closure: impl Fn() -> Message)`
+
+Uses a closure to produce the message. Useful for reducing overhead when message creation is expensive.
+
+```rust
+button("Create").on_press_with(|| Message::Create(expensive_data()))
+```
+
+### `on_press_maybe(message: Option<Message>)`
+
+Conditionally enables the button.
+
+```rust
+button("Save")
+    .on_press_maybe(if is_valid { Some(Message::Save) } else { None })
+```
+
+### `width(length: impl Into<Length>)`
+
+Sets the button width.
+
+```rust
+button("Full width").width(Length::Fill)
+button("Fixed").width(200)
+```
+
+### `height(length: impl Into<Length>)`
+
+Sets the button height.
+
+```rust
+button("Tall").height(50)
+```
+
+### `padding(padding: impl Into<Padding>)`
+
+Sets the padding around the button content.
+
+Default: `Padding { top: 5.0, bottom: 5.0, right: 10.0, left: 10.0 }`
+
+```rust
+button("Padded").padding(20)
+button("Custom").padding([10, 20])  // vertical, horizontal
+```
+
+### `clip(clip: bool)`
+
+Sets whether contents should be clipped on overflow.
+
+```rust
+button(very_long_content).clip(true)
+```
+
+### `style(style_fn: impl Fn(&Theme, Status) -> Style)`
+
+Applies a custom style function.
+
+```rust
+button("Custom").style(|theme, status| {
+    button::Style {
+        background: Some(Color::from_rgb(0.2, 0.5, 0.8).into()),
+        text_color: Color::WHITE,
+        border: Border::rounded(5),
+        ..Default::default()
+    }
+})
+```
+
+## Built-in Styles
+
+Iced provides several pre-built button styles:
+
+### `button::primary`
+
+A primary button for main actions:
+
+```rust
+button("Save").style(button::primary)
+```
+
+### `button::secondary`
+
+A secondary button for complementary actions:
+
+```rust
+button("Cancel").style(button::secondary)
+```
+
+### `button::success`
+
+A success button for positive outcomes:
+
+```rust
+button("Confirm").style(button::success)
+```
+
+### `button::warning`
+
+A warning button for risky actions:
+
+```rust
+button("Proceed").style(button::warning)
+```
+
+### `button::danger`
+
+A danger button for destructive actions:
+
+```rust
+button("Delete").style(button::danger)
+```
+
+### `button::text`
+
+A text-only button, useful for links:
+
+```rust
+button("Learn more").style(button::text)
+```
+
+### `button::background`
+
+A button with background shading:
+
+```rust
+button("Options").style(button::background)
+```
+
+### `button::subtle`
+
+A subtle button with weak background:
+
+```rust
+button("More").style(button::subtle)
+```
+
+## Button Status
+
+Buttons have four possible states:
+
+- **`Status::Active`** - Can be pressed
+- **`Status::Hovered`** - Can be pressed and is being hovered
+- **`Status::Pressed`** - Is being pressed
+- **`Status::Disabled`** - Cannot be pressed
+
+## Style Structure
+
+```rust
+pub struct Style {
+    /// The background of the button
+    pub background: Option<Background>,
+    /// The text color of the button
+    pub text_color: Color,
+    /// The border of the button
+    pub border: Border,
+    /// The shadow of the button
+    pub shadow: Shadow,
+    /// Whether the button should be snapped to the pixel grid
+    pub snap: bool,
+}
+```
+
+## Complete Example
+
+```rust
+use iced::widget::{button, column, text};
+use iced::{Element, Length};
+
+#[derive(Default)]
+struct Counter {
+    value: i32,
+}
+
+#[derive(Clone, Debug)]
+enum Message {
+    Increment,
+    Decrement,
+    Reset,
+}
+
+impl Counter {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => self.value += 1,
+            Message::Decrement => self.value -= 1,
+            Message::Reset => self.value = 0,
+        }
+    }
+
+    fn view(&self) -> Element<Message> {
+        column![
+            text(self.value).size(50),
+            button("Increment")
+                .on_press(Message::Increment)
+                .style(button::success)
+                .width(Length::Fill),
+            button("Decrement")
+                .on_press_maybe(if self.value > 0 {
+                    Some(Message::Decrement)
+                } else {
+                    None
+                })
+                .width(Length::Fill),
+            button("Reset")
+                .on_press(Message::Reset)
+                .style(button::danger),
+        ]
+        .spacing(10)
+        .padding(20)
+        .into()
+    }
+}
+```
+
+## Related Widgets
+
+- [Text](/widgets/text) - For button labels
+- [Container](/widgets/container) - For custom button layouts
+- [Row/Column](/widgets/row-and-column) - For arranging multiple buttons

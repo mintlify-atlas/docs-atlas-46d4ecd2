@@ -1,0 +1,251 @@
+---
+title: Text
+description: Display text content with customizable styling
+---
+
+The `Text` widget displays text content with support for various fonts, sizes, colors, and formatting options.
+
+## Basic Usage
+
+```rust
+use iced::widget::text;
+
+fn view(state: &State) -> Element<Message> {
+    text("Hello, Iced!").into()
+}
+```
+
+## Using the text! Macro
+
+The `text!` macro provides `format!`-like syntax:
+
+```rust
+use iced::widget::text;
+
+let count = 42;
+text!("Count: {}", count)
+text!("Position: ({}, {})", x, y)
+```
+
+## Builder Methods
+
+The `Text` widget is defined in the core library and supports these methods:
+
+### `size(size: impl Into<Pixels>)`
+
+Sets the text size.
+
+```rust
+text("Large text").size(30)
+text("Small text").size(12)
+```
+
+### `color(color: impl Into<Color>)`
+
+Sets the text color.
+
+```rust
+use iced::Color;
+
+text("Red text").color(Color::from_rgb(1.0, 0.0, 0.0))
+text("Blue text").color(color!(0x0000ff))
+```
+
+### `font(font: impl Into<Font>)`
+
+Sets the font.
+
+```rust
+text("Custom font").font(Font::MONOSPACE)
+```
+
+### `width(width: impl Into<Length>)`
+
+Sets the width of the text area.
+
+```rust
+text("Full width").width(Length::Fill)
+```
+
+### `height(height: impl Into<Length>)`
+
+Sets the height of the text area.
+
+```rust
+text("Fixed height").height(50)
+```
+
+### `align_x(alignment: impl Into<alignment::Horizontal>)`
+
+Sets horizontal alignment.
+
+```rust
+use iced::alignment;
+
+text("Centered")
+    .align_x(alignment::Horizontal::Center)
+    .width(Length::Fill)
+```
+
+### `align_y(alignment: impl Into<alignment::Vertical>)`
+
+Sets vertical alignment.
+
+```rust
+use iced::alignment;
+
+text("Bottom aligned")
+    .align_y(alignment::Vertical::Bottom)
+    .height(100)
+```
+
+### `line_height(line_height: impl Into<LineHeight>)`
+
+Sets the line height for multi-line text.
+
+```rust
+text("Multi\nline\ntext").line_height(1.5)
+```
+
+### `shaping(shaping: Shaping)`
+
+Sets text shaping strategy.
+
+```rust
+use iced::widget::text::Shaping;
+
+text("Advanced text").shaping(Shaping::Advanced)
+```
+
+### `wrapping(wrapping: Wrapping)`
+
+Sets how text should wrap.
+
+```rust
+use iced::widget::text::Wrapping;
+
+text("This is a long text that will wrap")
+    .wrapping(Wrapping::Word)
+    .width(200)
+```
+
+## Color Helper
+
+Use the `color!` macro for convenient color creation:
+
+```rust
+text("Colored").color(color!(0xff0000))      // Hex
+text("Colored").color(color!(255, 0, 0))      // RGB
+text("Colored").color(color!(1.0, 0.0, 0.0))  // RGB float
+```
+
+## Rich Text
+
+For more complex text formatting, use `Rich` text with spans:
+
+```rust
+use iced::widget::text::{Rich, Span};
+use iced::Color;
+
+Rich::new()
+    .push(Span::new("Hello "))
+    .push(Span::new("world!").color(Color::from_rgb(0.0, 0.5, 1.0)))
+    .push(Span::new(" This is "))
+    .push(Span::new("bold").font(Font::MONOSPACE))
+```
+
+## Text Alignment Example
+
+```rust
+use iced::widget::{column, container, text};
+use iced::{alignment, Element, Length};
+
+fn view() -> Element<'static, Message> {
+    column![
+        container(
+            text("Left aligned")
+                .align_x(alignment::Horizontal::Left)
+        )
+        .width(Length::Fill)
+        .padding(10),
+        
+        container(
+            text("Center aligned")
+                .align_x(alignment::Horizontal::Center)
+        )
+        .width(Length::Fill)
+        .padding(10),
+        
+        container(
+            text("Right aligned")
+                .align_x(alignment::Horizontal::Right)
+        )
+        .width(Length::Fill)
+        .padding(10),
+    ]
+    .into()
+}
+```
+
+## Styled Text Example
+
+```rust
+use iced::widget::{column, text};
+use iced::{color, Element, Font};
+
+fn view() -> Element<'static, Message> {
+    column![
+        text("Default text"),
+        
+        text("Large blue text")
+            .size(32)
+            .color(color!(0x0066cc)),
+        
+        text("Small gray text")
+            .size(10)
+            .color(color!(0x666666)),
+        
+        text("Monospace code")
+            .font(Font::MONOSPACE),
+    ]
+    .spacing(10)
+    .into()
+}
+```
+
+## Dynamic Text
+
+```rust
+use iced::widget::text;
+
+struct AppState {
+    counter: u32,
+    username: String,
+}
+
+fn view(state: &AppState) -> Element<Message> {
+    column![
+        text!("Counter: {}", state.counter),
+        text!("Welcome, {}!", state.username),
+        text(format!("Status: {}", if state.counter > 10 {
+            "High"
+        } else {
+            "Low"
+        })),
+    ]
+    .into()
+}
+```
+
+## Performance Tips
+
+1. **Avoid recreating static text**: Cache text widgets that don't change
+2. **Use `text!` macro**: More efficient for formatted strings
+3. **Limit font changes**: Stick to a few fonts for better performance
+4. **Use appropriate shaping**: Use `Shaping::Basic` for simple text
+
+## Related Widgets
+
+- [TextInput](/widgets/text-input) - For editable text
+- [Button](/widgets/button) - Often contains text labels
+- [Container](/widgets/container) - For positioning text

@@ -1,0 +1,467 @@
+---
+title: 'Scrollable'
+description: 'A scrollable container for displaying large amounts of content'
+---
+
+## Overview
+
+A `Scrollable` is a widget that can display an infinite amount of content with scrollbars. It supports vertical scrolling, horizontal scrolling, or both, with customizable scrollbar appearance and behavior.
+
+## Constructor
+
+### `scrollable::Scrollable::new`
+
+```rust
+pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self
+```
+
+Creates a new vertical `Scrollable` with the given content.
+
+### `scrollable::Scrollable::with_direction`
+
+```rust
+pub fn with_direction(
+    content: impl Into<Element<'a, Message, Theme, Renderer>>,
+    direction: impl Into<Direction>
+) -> Self
+```
+
+Creates a new `Scrollable` with a specific scrolling direction.
+
+## Builder Methods
+
+### Direction
+
+#### `horizontal`
+
+```rust
+pub fn horizontal(self) -> Self
+```
+
+Makes the scrollable scroll horizontally.
+
+#### `direction`
+
+```rust
+pub fn direction(self, direction: impl Into<Direction>) -> Self
+```
+
+Sets the scrolling direction.
+
+```rust
+pub enum Direction {
+    Vertical(Scrollbar),
+    Horizontal(Scrollbar),
+    Both { vertical: Scrollbar, horizontal: Scrollbar },
+}
+```
+
+### Identity
+
+#### `id`
+
+```rust
+pub fn id(self, id: impl Into<widget::Id>) -> Self
+```
+
+Sets a unique identifier for the scrollable.
+
+### Layout
+
+#### `width`
+
+```rust
+pub fn width(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width of the scrollable.
+
+#### `height`
+
+```rust
+pub fn height(self, height: impl Into<Length>) -> Self
+```
+
+Sets the height of the scrollable.
+
+### Anchoring
+
+#### `anchor_top` / `anchor_bottom`
+
+```rust
+pub fn anchor_top(self) -> Self
+pub fn anchor_bottom(self) -> Self
+```
+
+Anchors vertical scrolling to the top or bottom.
+
+#### `anchor_left` / `anchor_right`
+
+```rust
+pub fn anchor_left(self) -> Self
+pub fn anchor_right(self) -> Self
+```
+
+Anchors horizontal scrolling to the left or right.
+
+#### `anchor_x` / `anchor_y`
+
+```rust
+pub fn anchor_x(self, alignment: Anchor) -> Self
+pub fn anchor_y(self, alignment: Anchor) -> Self
+```
+
+Sets the anchor position using the `Anchor` enum:
+
+```rust
+pub enum Anchor {
+    Start,  // Top for vertical, Left for horizontal
+    End,    // Bottom for vertical, Right for horizontal
+}
+```
+
+### Scrollbar Configuration
+
+#### `spacing`
+
+```rust
+pub fn spacing(self, spacing: impl Into<Pixels>) -> Self
+```
+
+Embeds the scrollbar into the scrollable with the given spacing, instead of floating over content.
+
+### Behavior
+
+#### `on_scroll`
+
+```rust
+pub fn on_scroll(self, f: impl Fn(Viewport) -> Message + 'a) -> Self
+```
+
+Sets a function to call when the scrollable is scrolled. The function receives the current viewport.
+
+```rust
+pub struct Viewport {
+    pub offset_x: AbsoluteOffset,
+    pub offset_y: AbsoluteOffset,
+    pub bounds: Rectangle,
+    pub content_bounds: Rectangle,
+}
+```
+
+#### `auto_scroll`
+
+```rust
+pub fn auto_scroll(self, auto_scroll: bool) -> Self
+```
+
+Enables auto-scrolling with the middle mouse button. Default is disabled.
+
+### Appearance
+
+#### `style`
+
+```rust
+pub fn style(self, style: impl Fn(&Theme, Status) -> Style + 'a) -> Self
+```
+
+Sets a custom style function.
+
+## Scrollbar
+
+```rust
+pub struct Scrollbar {
+    width: f32,
+    margin: f32,
+    scroller_width: f32,
+    alignment: Anchor,
+    spacing: Option<f32>,
+}
+```
+
+### Scrollbar Methods
+
+```rust
+impl Scrollbar {
+    pub fn new() -> Self
+    pub fn hidden() -> Self  // Zero-width scrollbar
+    pub fn width(self, width: impl Into<Pixels>) -> Self
+    pub fn margin(self, margin: impl Into<Pixels>) -> Self
+    pub fn scroller_width(self, scroller_width: impl Into<Pixels>) -> Self
+    pub fn anchor(self, alignment: Anchor) -> Self
+    pub fn spacing(self, spacing: impl Into<Pixels>) -> Self
+}
+```
+
+## Status
+
+```rust
+pub enum Status {
+    Active {
+        is_horizontal_scrollbar_disabled: bool,
+        is_vertical_scrollbar_disabled: bool,
+    },
+    Hovered {
+        is_horizontal_scrollbar_hovered: bool,
+        is_vertical_scrollbar_hovered: bool,
+        is_horizontal_scrollbar_disabled: bool,
+        is_vertical_scrollbar_disabled: bool,
+    },
+    Dragged {
+        is_horizontal_scrollbar_dragged: bool,
+        is_vertical_scrollbar_dragged: bool,
+        is_horizontal_scrollbar_disabled: bool,
+        is_vertical_scrollbar_disabled: bool,
+    },
+}
+```
+
+## Style
+
+```rust
+pub struct Style {
+    pub container: container::Style,
+    pub vertical_rail: Rail,
+    pub horizontal_rail: Rail,
+    pub gap: Option<Background>,
+    pub auto_scroll: AutoScroll,
+}
+
+pub struct Rail {
+    pub background: Option<Background>,
+    pub border: Border,
+    pub scroller: Scroller,
+}
+
+pub struct Scroller {
+    pub background: Background,
+    pub border: Border,
+}
+```
+
+## Examples
+
+### Basic Vertical Scrollable
+
+```rust
+use iced::widget::{column, scrollable, space, text};
+
+scrollable(
+    column![
+        text("Scroll me!"),
+        space().height(3000),
+        text("You did it!"),
+    ]
+)
+```
+
+### Horizontal Scrollable
+
+```rust
+use iced::widget::{row, scrollable, space, text};
+
+scrollable(
+    row![
+        text("Wide content"),
+        space().width(3000),
+        text("End"),
+    ]
+)
+.horizontal()
+```
+
+### Both Directions
+
+```rust
+use iced::widget::scrollable::{Direction, Scrollbar};
+
+scrollable(large_content)
+    .direction(Direction::Both {
+        vertical: Scrollbar::default(),
+        horizontal: Scrollbar::default(),
+    })
+```
+
+### With Size Constraints
+
+```rust
+scrollable(content)
+    .width(Length::Fill)
+    .height(400)
+```
+
+### With Scroll Event Handler
+
+```rust
+scrollable(content)
+    .on_scroll(|viewport| {
+        Message::Scrolled {
+            offset: viewport.offset_y,
+        }
+    })
+```
+
+### Anchored to Bottom (Chat)
+
+```rust
+scrollable(
+    column(messages)
+        .spacing(10)
+)
+.anchor_bottom()
+.height(Length::Fill)
+```
+
+### With Embedded Scrollbar
+
+```rust
+scrollable(content)
+    .spacing(10)  // 10px between content and scrollbar
+    .width(Length::Fill)
+```
+
+### Hidden Scrollbar
+
+```rust
+use iced::widget::scrollable::{Direction, Scrollbar};
+
+scrollable(content)
+    .direction(Direction::Vertical(Scrollbar::hidden()))
+```
+
+### With Auto-scroll
+
+```rust
+scrollable(large_content)
+    .auto_scroll(true)  // Enable middle-click auto-scroll
+```
+
+### Custom Scrollbar Style
+
+```rust
+scrollable(content)
+    .style(|theme, status| {
+        scrollable::Style {
+            container: container::Style::default(),
+            vertical_rail: scrollable::Rail {
+                background: Some(Color::from_rgb(0.9, 0.9, 0.9).into()),
+                border: Border::default(),
+                scroller: scrollable::Scroller {
+                    background: Color::from_rgb(0.5, 0.5, 0.5).into(),
+                    border: Border {
+                        radius: 4.0.into(),
+                        width: 0.0,
+                        color: Color::TRANSPARENT,
+                    },
+                },
+            },
+            horizontal_rail: scrollable::Rail::default(),
+            gap: None,
+            auto_scroll: scrollable::AutoScroll::default(),
+        }
+    })
+```
+
+### Custom Scrollbar Configuration
+
+```rust
+use iced::widget::scrollable::{Direction, Scrollbar};
+
+scrollable(content)
+    .direction(Direction::Vertical(
+        Scrollbar::new()
+            .width(8)
+            .margin(4)
+            .scroller_width(8)
+    ))
+```
+
+### Virtualized List Pattern
+
+```rust
+let visible_items = state.items
+    .iter()
+    .skip(state.scroll_offset / ITEM_HEIGHT)
+    .take(VISIBLE_COUNT);
+
+scrollable(
+    column(visible_items.map(|item| {
+        container(text(item))
+            .height(ITEM_HEIGHT)
+    }))
+)
+.on_scroll(|viewport| {
+    Message::ScrollChanged(viewport.offset_y)
+})
+.height(Length::Fill)
+```
+
+### Chat Window
+
+```rust
+scrollable(
+    column(messages.iter().map(|msg| {
+        container(
+            column![
+                text(&msg.author).size(12),
+                text(&msg.content),
+            ]
+            .spacing(4)
+        )
+        .padding(10)
+    }))
+    .spacing(5)
+)
+.anchor_bottom()  // Auto-scroll to bottom
+.height(Length::Fill)
+```
+
+### Code Editor Viewport
+
+```rust
+scrollable(
+    column(
+        lines.iter().enumerate().map(|(i, line)| {
+            row![
+                text(format!("{:4}", i + 1)).size(12),
+                text(line).font(MONOSPACE_FONT),
+            ]
+            .spacing(10)
+        })
+    )
+)
+.direction(Direction::Both {
+    vertical: Scrollbar::default(),
+    horizontal: Scrollbar::default(),
+})
+.width(Length::Fill)
+.height(Length::Fill)
+```
+
+## Interaction
+
+- **Mouse wheel** - Scroll vertically (or horizontally with Shift)
+- **Touch** - Drag to scroll
+- **Scrollbar drag** - Click and drag the scrollbar handle
+- **Middle mouse button** - Auto-scroll (if enabled)
+- **Keyboard** - Arrow keys when content is focused
+
+## Performance Tips
+
+1. Use `anchor_bottom()` for chat-like interfaces
+2. Consider virtualization for very long lists
+3. Use `on_scroll` sparingly for expensive operations
+4. Embedded scrollbars (`spacing()`) take layout space
+5. Hidden scrollbars still allow scrolling
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Container" href="/api/widget/container">
+    For non-scrollable containers
+  </Card>
+  
+  <Card title="Layout Guide" href="/guides/layout">
+    Learn about layout strategies
+  </Card>
+</CardGroup>

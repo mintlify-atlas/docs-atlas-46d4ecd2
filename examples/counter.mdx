@@ -1,0 +1,240 @@
+---
+title: 'Counter Example'
+description: 'The classic counter example - perfect introduction to Iced'
+---
+
+# Counter Example
+
+The counter example is the "Hello, World!" of GUI programming with Iced. It demonstrates the core concepts of Iced's architecture in the simplest possible way.
+
+## What You'll Learn
+
+- Basic Iced application structure
+- State management
+- Message handling
+- Button widgets
+- Text rendering
+- Layout with columns
+
+## Complete Source Code
+
+Here's the complete counter example from `examples/counter/src/main.rs`:
+
+```rust
+use iced::Center;
+use iced::widget::{Column, button, column, text};
+
+pub fn main() -> iced::Result {
+    iced::run(Counter::update, Counter::view)
+}
+
+#[derive(Default)]
+struct Counter {
+    value: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    Increment,
+    Decrement,
+}
+
+impl Counter {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => {
+                self.value += 1;
+            }
+            Message::Decrement => {
+                self.value -= 1;
+            }
+        }
+    }
+
+    fn view(&self) -> Column<'_, Message> {
+        column![
+            button("Increment").on_press(Message::Increment),
+            text(self.value).size(50),
+            button("Decrement").on_press(Message::Decrement)
+        ]
+        .padding(20)
+        .align_x(Center)
+    }
+}
+```
+
+## Breaking It Down
+
+### 1. Application Entry Point
+
+```rust
+pub fn main() -> iced::Result {
+    iced::run(Counter::update, Counter::view)
+}
+```
+
+The `iced::run` function is the simplest way to start an Iced application. It takes two functions:
+- `update`: How to modify state based on messages
+- `view`: How to render the current state
+
+### 2. State Definition
+
+```rust
+#[derive(Default)]
+struct Counter {
+    value: i64,
+}
+```
+
+The state is just a simple struct holding the counter value. The `Default` derive allows Iced to initialize it automatically.
+
+### 3. Messages
+
+```rust
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    Increment,
+    Decrement,
+}
+```
+
+Messages represent all possible events in your application. They must be `Clone` and typically should be `Debug` for easier debugging.
+
+### 4. Update Logic
+
+```rust
+fn update(&mut self, message: Message) {
+    match message {
+        Message::Increment => {
+            self.value += 1;
+        }
+        Message::Decrement => {
+            self.value -= 1;
+        }
+    }
+}
+```
+
+The update function takes a mutable reference to state and a message, then modifies the state accordingly. This is where all your business logic lives.
+
+### 5. View Logic
+
+```rust
+fn view(&self) -> Column<'_, Message> {
+    column![
+        button("Increment").on_press(Message::Increment),
+        text(self.value).size(50),
+        button("Decrement").on_press(Message::Decrement)
+    ]
+    .padding(20)
+    .align_x(Center)
+}
+```
+
+The view function creates a widget tree describing your UI:
+- `column!` macro creates a vertical layout
+- `button().on_press()` creates clickable buttons that emit messages
+- `text()` displays the current value
+- `.padding()` and `.align_x()` style the layout
+
+## Testing
+
+The counter example includes tests using Iced's testing framework:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iced_test::{Error, simulator};
+
+    #[test]
+    fn it_counts() -> Result<(), Error> {
+        let mut counter = Counter { value: 0 };
+        let mut ui = simulator(counter.view());
+
+        let _ = ui.click("Increment")?;
+        let _ = ui.click("Increment")?;
+        let _ = ui.click("Decrement")?;
+
+        for message in ui.into_messages() {
+            counter.update(message);
+        }
+
+        assert_eq!(counter.value, 1);
+
+        let mut ui = simulator(counter.view());
+        assert!(ui.find("1").is_ok(), "Counter should display 1!");
+
+        Ok(())
+    }
+}
+```
+
+This demonstrates:
+- Creating a UI simulator
+- Simulating user clicks
+- Processing messages
+- Verifying state changes
+- Checking UI content
+
+## Running the Example
+
+```bash
+cargo run --package counter
+```
+
+Or from the examples directory:
+
+```bash
+cd examples/counter
+cargo run
+```
+
+## Key Concepts
+
+### The Elm Architecture
+
+Iced follows The Elm Architecture pattern:
+
+1. **Model** (State) - The current application state
+2. **Update** - A function that transforms state based on messages
+3. **View** - A function that renders state into UI
+
+This pattern ensures:
+- Predictable state updates
+- Easy testing
+- Clear separation of concerns
+- Time-travel debugging capability
+
+### Immutability
+
+While the `update` function takes `&mut self`, the pattern encourages thinking about state as immutable. Each update creates a new logical state.
+
+### Type Safety
+
+Rust's type system ensures:
+- Messages are handled exhaustively
+- State transitions are valid
+- UI and logic stay in sync
+
+## Next Steps
+
+Once you understand the counter:
+
+1. Try adding a reset button
+2. Add a text input to set the counter value
+3. Experiment with different layouts (row instead of column)
+4. Try different widget styles and themes
+5. Move on to the [todos example](/examples/todo) for a more complex application
+
+## Related Examples
+
+- [Styling](/examples/styling) - Learn about themes and custom styles
+- [Todos](/examples/todo) - A more complete application
+- [Events](/examples/overview#widget-examples) - Handle keyboard and other events
+
+## Source Code
+
+View the complete example on GitHub:
+- [counter/src/main.rs](https://github.com/iced-rs/iced/blob/master/examples/counter/src/main.rs)
+- [counter/Cargo.toml](https://github.com/iced-rs/iced/blob/master/examples/counter/Cargo.toml)

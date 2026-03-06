@@ -1,0 +1,475 @@
+---
+title: Custom Renderers
+description: Creating custom rendering backends for Iced applications
+---
+
+Iced's renderer-agnostic architecture allows you to create custom rendering backends tailored to your specific needs. This guide covers implementing custom renderers from scratch.
+
+## Why Create a Custom Renderer?
+
+**Common use cases:**
+- Integrate with existing rendering engines
+- Add platform-specific optimizations
+- Support specialized hardware
+- Create rendering backends for embedded systems
+- Implement custom effects or shading models
+- Export to different formats (PDF, SVG, etc.)
+
+## Implementing the Core Traits
+
+### Step 1: Basic Renderer
+
+Start by implementing the core `Renderer` trait:
+
+```rust
+use iced_core::renderer;
+use iced_core::{Background, Rectangle, Transformation};
+
+pub struct MyRenderer {
+    // Your renderer state
+}
+
+impl renderer::Renderer for MyRenderer {
+    fn fill_quad(&mut self, quad: renderer::Quad, background: impl Into<Background>) {
+        let background = background.into();
+        // Draw a quad (rectangle) with the specified background
+        // quad.bounds gives you the rectangle coordinates
+        // quad.border gives you border radius and width
+    }
+
+    fn start_layer(&mut self, bounds: Rectangle) {
+        // Begin a new clipping layer
+        // Only content within 'bounds' should be visible
+    }
+
+    fn end_layer(&mut self) {
+        // End the current clipping layer
+    }
+
+    fn start_transformation(&mut self, transformation: Transformation) {
+        // Push a transformation matrix
+        // Apply translation, rotation, and scaling
+    }
+
+    fn end_transformation(&mut self) {
+        // Pop the transformation matrix
+    }
+
+    fn allocate_image(
+        &mut self,
+        handle: &iced_core::image::Handle,
+        callback: impl FnOnce(Result<iced_core::image::Allocation, iced_core::image::Error>) + Send + 'static,
+    ) {
+        // Asynchronously load and allocate an image
+        // Call the callback when done
+    }
+
+    fn hint(&mut self, scale_factor: f32) {
+        // Hint about the current scale factor
+        // Use for DPI-aware rendering
+    }
+
+    fn scale_factor(&self) -> Option<f32> {
+        // Return the current scale factor if known
+        None
+    }
+
+    fn tick(&mut self) {
+        // Called once per frame
+        // Use for resource management
+    }
+
+    fn reset(&mut self, new_bounds: Rectangle) {
+        // Reset the renderer for a new frame
+    }
+}
+```
+
+### Step 2: Text Rendering
+
+Implement text rendering support:
+
+```rust
+use iced_core::text;
+use iced_core::{Color, Font, Pixels, Point};
+
+// Define your text types
+pub struct MyParagraph {
+    // Text layout information
+}
+
+pub struct MyEditor {
+    // Text editor state
+}
+
+impl text::Renderer for MyRenderer {
+    type Font = Font;
+    type Paragraph = MyParagraph;
+    type Editor = MyEditor;
+
+    const ICON_FONT: Font = Font::with_name("Iced-Icons");
+    const CHECKMARK_ICON: char = '\u{f00c}';
+    const ARROW_DOWN_ICON: char = '\u{e800}';
+    const ICED_LOGO: char = '\u{e801}';
+    const SCROLL_UP_ICON: char = '\u{e802}';
+    const SCROLL_DOWN_ICON: char = '\u{e803}';
+    const SCROLL_LEFT_ICON: char = '\u{e804}';
+    const SCROLL_RIGHT_ICON: char = '\u{e805}';
+
+    fn default_font(&self) -> Self::Font {
+        Font::default()
+    }
+
+    fn default_size(&self) -> Pixels {
+        Pixels(16.0)
+    }
+
+    fn fill_paragraph(
+        &mut self,
+        paragraph: &Self::Paragraph,
+        position: Point,
+        color: Color,
+        clip_bounds: Rectangle,
+    ) {
+        // Render a paragraph of text
+    }
+
+    fn fill_editor(
+        &mut self,
+        editor: &Self::Editor,
+        position: Point,
+        color: Color,
+        clip_bounds: Rectangle,
+    ) {
+        // Render an editable text field
+    }
+
+    fn fill_text(
+        &mut self,
+        text: iced_core::Text,
+        position: Point,
+        color: Color,
+        clip_bounds: Rectangle,
+    ) {
+        // Render simple text
+    }
+}
+```
+
+### Step 3: Image Support (Optional)
+
+Add image rendering capabilities:
+
+```rust
+use iced_core::image;
+use iced_core::{Image, Size};
+
+impl image::Renderer for MyRenderer {
+    type Handle = image::Handle;
+
+    fn load_image(&self, handle: &Self::Handle) -> Result<image::Allocation, image::Error> {
+        // Load image from handle (file path, bytes, etc.)
+        // Return allocation ID for later use
+    }
+
+    fn measure_image(&self, handle: &Self::Handle) -> Option<Size<u32>> {
+        // Return image dimensions
+    }
+
+    fn draw_image(
+        &mut self,
+        image: Image<Self::Handle>,
+        bounds: Rectangle,
+        clip_bounds: Rectangle,
+    ) {
+        // Draw the image within bounds
+    }
+}
+```
+
+### Step 4: SVG Support (Optional)
+
+```rust
+use iced_core::svg;
+use iced_core::Svg;
+
+impl svg::Renderer for MyRenderer {
+    fn measure_svg(&self, handle: &svg::Handle) -> Size<u32> {
+        // Return SVG viewport dimensions
+    }
+
+    fn draw_svg(
+        &mut self,
+        svg: Svg,
+        bounds: Rectangle,
+        clip_bounds: Rectangle,
+    ) {
+        // Render SVG within bounds
+    }
+}
+```
+
+### Step 5: Mesh Support (Optional)
+
+For custom geometry:
+
+```rust
+use iced_graphics::mesh;
+use iced_graphics::Mesh;
+
+impl mesh::Renderer for MyRenderer {
+    fn draw_mesh(&mut self, mesh: Mesh) {
+        // Draw triangle mesh
+        // mesh.vertices() - vertex positions and colors
+        // mesh.indices() - triangle indices
+    }
+
+    fn draw_mesh_cache(&mut self, cache: mesh::Cache) {
+        // Draw cached mesh (for performance)
+    }
+}
+```
+
+## Creating a Compositor
+
+The compositor manages surfaces and presents frames:
+
+```rust
+use iced_graphics::compositor;
+use iced_graphics::{Compositor, Viewport};
+
+pub struct MyCompositor {
+    // Compositor state
+}
+
+impl Compositor for MyCompositor {
+    type Renderer = MyRenderer;
+    type Surface = MySurface;
+
+    async fn with_backend(
+        settings: iced_graphics::Settings,
+        display: impl compositor::Display + Clone,
+        compatible_window: impl compositor::Window + Clone,
+        shell: iced_graphics::Shell,
+        backend: Option<&str>,
+    ) -> Result<Self, iced_graphics::Error> {
+        // Initialize your compositor
+        // Return error if backend name doesn't match
+        Ok(Self { /* ... */ })
+    }
+
+    fn create_renderer(&self) -> Self::Renderer {
+        // Create a new renderer instance
+        MyRenderer { /* ... */ }
+    }
+
+    fn create_surface<W: compositor::Window + Clone>(
+        &mut self,
+        window: W,
+        width: u32,
+        height: u32,
+    ) -> Self::Surface {
+        // Create a rendering surface for a window
+        MySurface { /* ... */ }
+    }
+
+    fn configure_surface(&mut self, surface: &mut Self::Surface, width: u32, height: u32) {
+        // Resize the surface
+    }
+
+    fn load_font(&mut self, font: std::borrow::Cow<'static, [u8]>) {
+        // Load a font into the renderer
+    }
+
+    fn information(&self) -> compositor::Information {
+        // Return backend information
+        compositor::Information {
+            adapter: "My Custom Renderer".to_string(),
+            backend: "custom".to_string(),
+        }
+    }
+
+    fn present(
+        &mut self,
+        renderer: &mut Self::Renderer,
+        surface: &mut Self::Surface,
+        viewport: &Viewport,
+        background_color: iced_core::Color,
+        on_pre_present: impl FnOnce(),
+    ) -> Result<(), compositor::SurfaceError> {
+        // Render the frame to the surface
+        // Call on_pre_present before final present
+        on_pre_present();
+        // Present to screen
+        Ok(())
+    }
+
+    fn screenshot(
+        &mut self,
+        renderer: &mut Self::Renderer,
+        viewport: &Viewport,
+        background_color: iced_core::Color,
+    ) -> Vec<u8> {
+        // Capture the current frame as RGBA bytes
+        vec![]
+    }
+}
+```
+
+## Advanced Features
+
+### Custom Primitives (wgpu only)
+
+For GPU renderers, you can support custom shaders:
+
+```rust
+use iced_wgpu::Primitive;
+
+impl iced_wgpu::primitive::Renderer for MyRenderer {
+    fn draw_primitive(&mut self, bounds: Rectangle, primitive: impl Primitive) {
+        // Execute custom shader primitive
+        primitive.prepare(/* ... */);
+        primitive.render(/* ... */);
+    }
+}
+```
+
+### Geometry API Support
+
+For the Canvas widget:
+
+```rust
+use iced_graphics::geometry;
+
+impl geometry::Renderer for MyRenderer {
+    type Geometry = MyGeometry;
+    type Frame = MyFrame;
+
+    fn new_frame(&self, bounds: Rectangle) -> Self::Frame {
+        // Create a new drawing frame
+        MyFrame::new(bounds)
+    }
+
+    fn draw_geometry(&mut self, geometry: Self::Geometry) {
+        // Draw the geometry
+    }
+}
+```
+
+## Performance Considerations
+
+### Batching
+
+Group similar draw calls to minimize state changes:
+
+```rust
+struct DrawBatch {
+    quads: Vec<(Quad, Background)>,
+    meshes: Vec<Mesh>,
+}
+
+impl MyRenderer {
+    fn flush(&mut self) {
+        // Draw all batched items at once
+    }
+}
+```
+
+### Caching
+
+Cache expensive operations:
+
+```rust
+use rustc_hash::FxHashMap;
+
+struct MyRenderer {
+    text_cache: FxHashMap<TextCacheKey, CachedText>,
+    image_cache: FxHashMap<image::Handle, LoadedImage>,
+}
+```
+
+### Resource Management
+
+Clean up unused resources in `tick()`:
+
+```rust
+impl MyRenderer {
+    fn tick(&mut self) {
+        self.text_cache.retain(|_, v| v.is_recently_used());
+        self.image_cache.trim();
+    }
+}
+```
+
+## Testing Your Renderer
+
+Create a simple test application:
+
+```rust
+use iced::{Element, Program};
+
+fn main() -> iced::Result {
+    iced::application("Custom Renderer Test", update, view)
+        .run()
+}
+
+fn update(state: &mut State, message: Message) {
+    // ...
+}
+
+fn view(state: &State) -> Element<Message> {
+    // Test various widgets
+    column![
+        text("Hello, World!"),
+        button("Click me"),
+        // ...
+    ].into()
+}
+```
+
+## Integration
+
+To make your renderer the default:
+
+```rust
+impl iced_graphics::compositor::Default for MyRenderer {
+    type Compositor = MyCompositor;
+}
+```
+
+Then users can simply:
+
+```rust
+use iced::Program;
+
+fn main() -> iced::Result {
+    MyProgram::run(Settings::default())
+}
+```
+
+## Examples
+
+**Export to PDF:**
+- Implement renderer that writes to PDF primitives
+- Use for server-side report generation
+
+**Terminal UI:**
+- Render using ANSI escape codes
+- Use for CLI tools with rich interfaces
+
+**Recording:**
+- Capture all draw calls to a buffer
+- Replay for animations or testing
+
+## Resources
+
+- Study `iced_wgpu` implementation for GPU rendering patterns
+- Study `iced_tiny_skia` for CPU rendering patterns
+- Check the `fallback` module for composition strategies
+- Join the Iced Discord for renderer development help
+
+## Next Steps
+
+- Optimize your renderer with [Performance](/advanced/performance) tips
+- Use [Debugging](/advanced/debugging) tools during development
+- Review the [Renderer Architecture](/advanced/renderers) overview

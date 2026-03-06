@@ -1,0 +1,285 @@
+---
+title: Styling
+description: Customize the appearance of widgets using Iced's styling system
+---
+
+Iced doesn't have a unified styling system. However, all built-in widgets follow the same styling approach using the `style` method.
+
+## The style Method
+
+The appearance of a widget can be changed by calling its `style` method:
+
+```rust
+use iced::widget::container;
+use iced::Element;
+
+fn view(state: &State) -> Element<'_, Message> {
+    container("I am a rounded box!")
+        .style(container::rounded_box)
+        .into()
+}
+```
+
+## Built-in Style Functions
+
+Most widgets provide convenience styling functions in their respective modules:
+
+### Container Styles
+
+```rust
+use iced::widget::container;
+
+// Bordered box
+container("Content")
+    .style(container::bordered_box)
+
+// Rounded box
+container("Content")
+    .style(container::rounded_box)
+```
+
+### Button Styles
+
+```rust
+use iced::widget::button;
+
+// Primary button
+button("Primary")
+    .on_press(Message::ButtonPressed)
+    .style(button::primary)
+
+// Secondary button
+button("Secondary")
+    .on_press(Message::ButtonPressed)
+    .style(button::secondary)
+
+// Success button
+button("Success")
+    .on_press(Message::ButtonPressed)
+    .style(button::success)
+
+// Danger button
+button("Danger")
+    .on_press(Message::ButtonPressed)
+    .style(button::danger)
+
+// Warning button
+button("Warning")
+    .on_press(Message::ButtonPressed)
+    .style(button::warning)
+```
+
+### Text Styles
+
+```rust
+use iced::widget::text;
+
+// Danger text (red)
+text("Error message")
+    .style(text::danger)
+```
+
+## Custom Styles
+
+The `style` method takes a closure that receives the current active `Theme` and returns the widget style:
+
+```rust
+use iced::widget::button;
+use iced::{Element, Theme};
+
+fn view(state: &State) -> Element<'_, Message> {
+    button("Custom styled button!")
+        .style(|theme: &Theme, status| {
+            let palette = theme.extended_palette();
+
+            match status {
+                button::Status::Active => {
+                    button::Style::default()
+                        .with_background(palette.success.strong.color)
+                }
+                _ => button::primary(theme, status),
+            }
+        })
+        .into()
+}
+```
+
+## Widget Status
+
+Widgets that can be in multiple states provide a `Status` parameter:
+
+```rust
+button("Interactive button")
+    .style(|theme: &Theme, status| {
+        match status {
+            button::Status::Active => {
+                // Normal state
+                button::Style::default()
+            }
+            button::Status::Hovered => {
+                // When mouse hovers over button
+                button::Style::default()
+                    .with_background(theme.palette().primary)
+            }
+            button::Status::Pressed => {
+                // When button is clicked
+                button::Style::default()
+                    .with_background(theme.palette().danger)
+            }
+            button::Status::Disabled => {
+                // When button has no on_press
+                button::Style::default()
+            }
+        }
+    })
+```
+
+## Working with Palettes
+
+You can extract colors from a `Theme` using the `palette` or `extended_palette` methods:
+
+### Basic Palette
+
+```rust
+let palette = theme.palette();
+
+// Access standard colors
+palette.background
+palette.text
+palette.primary
+palette.success
+palette.danger
+```
+
+### Extended Palette
+
+```rust
+let palette = theme.extended_palette();
+
+// Access color variants
+palette.background.base.color
+palette.background.weak.color
+palette.background.strong.color
+
+palette.primary.base.color
+palette.success.strong.color
+palette.danger.base.color
+```
+
+## Complete Styling Example
+
+Here's a comprehensive example showing various widget styles:
+
+```rust
+use iced::widget::{
+    button, checkbox, column, container, pick_list, progress_bar,
+    row, rule, scrollable, slider, text, text_input, toggler,
+};
+use iced::{Element, Fill, Shrink, Center};
+
+fn view(&self) -> Element<'_, Message> {
+    // Styled text input
+    let text_input = text_input("Type something...", &self.input_value)
+        .on_input(Message::InputChanged)
+        .padding(10)
+        .size(20);
+
+    // Collection of styled buttons
+    let buttons = row![
+        button("Primary")
+            .on_press(Message::ButtonPressed)
+            .style(button::primary),
+        button("Secondary")
+            .on_press(Message::ButtonPressed)
+            .style(button::secondary),
+        button("Success")
+            .on_press(Message::ButtonPressed)
+            .style(button::success),
+        button("Danger")
+            .on_press(Message::ButtonPressed)
+            .style(button::danger),
+    ]
+    .spacing(10);
+
+    // Styled card container
+    let card = container(
+        column![
+            text("Card Example").size(24),
+            slider(0.0..=100.0, self.value, Message::SliderChanged),
+            progress_bar(0.0..=100.0, self.value),
+        ]
+        .spacing(20)
+    )
+    .width(Fill)
+    .padding(20)
+    .style(container::bordered_box);
+
+    column![
+        text_input,
+        buttons,
+        rule::horizontal(1),
+        card
+    ]
+    .spacing(20)
+    .padding(20)
+    .into()
+}
+```
+
+## Styling with Borders and Shadows
+
+```rust
+use iced::{border, Shadow, Color};
+
+container("Styled container")
+    .style(|theme| {
+        let palette = theme.extended_palette();
+        
+        container::Style::default()
+            .background(palette.background.base.color)
+            .border(border::rounded(10).width(2).color(palette.primary.base.color))
+            .shadow(Shadow {
+                color: Color::BLACK,
+                offset: [0.0, 4.0].into(),
+                blur_radius: 8.0,
+            })
+    })
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use built-in style functions first">
+    Before writing custom styles, check if the widget module provides a suitable built-in style function like `button::primary` or `container::rounded_box`.
+  </Accordion>
+
+  <Accordion title="Extract palette colors">
+    Always use colors from `theme.palette()` or `theme.extended_palette()` to ensure your styles adapt to theme changes.
+  </Accordion>
+
+  <Accordion title="Handle all status variants">
+    When styling interactive widgets, make sure to handle all status variants (Active, Hovered, Pressed, Disabled) for a polished user experience.
+  </Accordion>
+
+  <Accordion title="Reuse style functions">
+    Create reusable style functions for common patterns in your application:
+    ```rust
+    fn card_style(theme: &Theme) -> container::Style {
+        let palette = theme.extended_palette();
+        container::Style::default()
+            .border(border::rounded(8).width(1).color(palette.background.strong.color))
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Theming" icon="palette" href="/guides/theming">
+    Learn about theme system and built-in themes
+  </Card>
+  <Card title="Layout" icon="table-cells" href="/guides/layout">
+    Master layout composition
+  </Card>
+</CardGroup>

@@ -1,0 +1,320 @@
+---
+title: Custom Themes
+description: Create your own custom themes in Iced
+---
+
+# Custom Themes
+
+Iced allows you to create custom themes by defining your own color palettes. The theme system automatically generates extended color variations from your base palette.
+
+## Creating a Custom Theme
+
+### Basic Custom Theme
+
+```rust
+use iced::{Theme, theme::{Palette, palette}};
+use iced::Color;
+
+let palette = Palette {
+    background: Color::from_rgb(0.1, 0.1, 0.15),
+    text: Color::from_rgb(0.9, 0.9, 0.95),
+    primary: Color::from_rgb(0.4, 0.6, 1.0),
+    success: Color::from_rgb(0.3, 0.8, 0.4),
+    warning: Color::from_rgb(1.0, 0.7, 0.2),
+    danger: Color::from_rgb(0.9, 0.3, 0.3),
+};
+
+let custom_theme = Theme::custom("My Custom Theme", palette);
+```
+
+The `custom` method automatically generates an `Extended` palette with color variations for all widget states.
+
+### Custom Extended Palette
+
+For full control over all color variations, provide your own extended palette generator:
+
+```rust
+use iced::{Theme, theme::{Palette, palette::Extended}};
+
+fn generate_extended(palette: Palette) -> Extended {
+    // Custom logic to generate extended colors
+    Extended::generate(palette)
+}
+
+let theme = Theme::custom_with_fn(
+    "My Theme",
+    palette,
+    generate_extended,
+);
+```
+
+## Custom Struct
+
+You can also work directly with the `Custom` struct:
+
+```rust
+pub struct Custom {
+    name: Cow<'static, str>,
+    palette: Palette,
+    extended: palette::Extended,
+}
+```
+
+### Methods
+
+```rust
+impl Custom {
+    pub fn new(name: String, palette: Palette) -> Self
+    
+    pub fn with_fn(
+        name: impl Into<Cow<'static, str>>,
+        palette: Palette,
+        generate: impl FnOnce(Palette) -> palette::Extended,
+    ) -> Self
+}
+```
+
+## Extended Palette Generation
+
+The `Extended::generate` method creates color variations automatically:
+
+```rust
+pub struct Extended {
+    pub background: Background,
+    pub primary: Primary,
+    pub secondary: Secondary,
+    pub success: Success,
+    pub warning: Warning,
+    pub danger: Danger,
+    pub is_dark: bool,
+}
+```
+
+Each color category includes:
+- **base**: The main color
+- **weak**: A subdued version
+- **strong**: An emphasized version
+
+Background colors include additional variations:
+- **weakest**, **weaker**, **weak**: Lighter/darker versions
+- **neutral**: Between weak and strong
+- **strong**, **stronger**, **strongest**: More intense versions
+
+See the [Palette](/api/theme/palette) page for full details.
+
+## Color Utilities
+
+The `palette` module provides utilities for color manipulation:
+
+```rust
+use iced::theme::palette;
+
+// Lighten a color by 20%
+let lighter = palette::lighten(color, 0.2);
+
+// Darken a color by 15%
+let darker = palette::darken(color, 0.15);
+
+// Lighten if dark, darken if light
+let deviated = palette::deviate(color, 0.1);
+
+// Mix two colors
+let mixed = palette::mix(color_a, color_b, 0.5);
+
+// Check if color is dark
+let is_dark = palette::is_dark(color);
+
+// Make text readable on background
+let readable_text = palette::readable(background, text);
+```
+
+## Examples
+
+### Purple Theme
+
+```rust
+use iced::{Theme, theme::Palette, Color};
+
+fn purple_theme() -> Theme {
+    let palette = Palette {
+        background: Color::from_rgb(0.08, 0.05, 0.12),
+        text: Color::from_rgb(0.95, 0.92, 1.0),
+        primary: Color::from_rgb(0.6, 0.4, 0.9),
+        success: Color::from_rgb(0.5, 0.8, 0.5),
+        warning: Color::from_rgb(0.9, 0.7, 0.3),
+        danger: Color::from_rgb(0.9, 0.3, 0.4),
+    };
+    
+    Theme::custom("Purple Dream", palette)
+}
+```
+
+### High Contrast Theme
+
+```rust
+use iced::{Theme, theme::Palette, Color};
+
+fn high_contrast_theme() -> Theme {
+    let palette = Palette {
+        background: Color::BLACK,
+        text: Color::WHITE,
+        primary: Color::from_rgb(0.0, 0.7, 1.0),
+        success: Color::from_rgb(0.0, 1.0, 0.0),
+        warning: Color::from_rgb(1.0, 1.0, 0.0),
+        danger: Color::from_rgb(1.0, 0.0, 0.0),
+    };
+    
+    Theme::custom("High Contrast", palette)
+}
+```
+
+### Dynamic Theme from User Colors
+
+```rust
+use iced::{Theme, theme::Palette, Color};
+
+struct State {
+    user_primary_color: Color,
+    dark_mode: bool,
+}
+
+impl State {
+    fn create_theme(&self) -> Theme {
+        let palette = if self.dark_mode {
+            Palette {
+                background: Color::from_rgb(0.1, 0.1, 0.1),
+                text: Color::from_rgb(0.9, 0.9, 0.9),
+                primary: self.user_primary_color,
+                success: Color::from_rgb(0.2, 0.7, 0.3),
+                warning: Color::from_rgb(0.9, 0.7, 0.2),
+                danger: Color::from_rgb(0.8, 0.2, 0.2),
+            }
+        } else {
+            Palette {
+                background: Color::WHITE,
+                text: Color::BLACK,
+                primary: self.user_primary_color,
+                success: Color::from_rgb(0.1, 0.5, 0.2),
+                warning: Color::from_rgb(0.7, 0.5, 0.1),
+                danger: Color::from_rgb(0.7, 0.2, 0.2),
+            }
+        };
+        
+        Theme::custom("User Theme", palette)
+    }
+}
+
+fn theme(state: &State) -> Theme {
+    state.create_theme()
+}
+```
+
+### Modifying an Existing Theme
+
+```rust
+use iced::{Theme, theme::palette};
+
+fn customize_tokyo_night() -> Theme {
+    let mut palette = Theme::TokyoNight.palette();
+    
+    // Change the primary color
+    palette.primary = Color::from_rgb(0.8, 0.3, 0.9);
+    
+    Theme::custom("Tokyo Night (Modified)", palette)
+}
+```
+
+### Using Extended Palette Colors
+
+```rust
+use iced::widget::button;
+
+fn styled_button(theme: &Theme) -> button::Style {
+    let palette = theme.extended_palette();
+    
+    button::Style {
+        background: Some(palette.primary.strong.color.into()),
+        text_color: palette.primary.strong.text,
+        border: Border {
+            color: palette.primary.base.color,
+            width: 2.0,
+            radius: 4.0.into(),
+        },
+        shadow: Shadow::default(),
+    }
+}
+```
+
+## Using Your Custom Theme
+
+```rust
+use iced::Theme;
+
+struct State {
+    custom_theme: Theme,
+}
+
+fn main() -> iced::Result {
+    let custom_theme = create_custom_theme();
+    
+    iced::application(
+        || State { custom_theme },
+        update,
+        view,
+    )
+    .theme(|state| state.custom_theme.clone())
+    .run()
+}
+```
+
+## Best Practices
+
+### Ensure Readability
+
+Use the color utilities to ensure text is readable:
+
+```rust
+use iced::theme::palette;
+
+let background = Color::from_rgb(0.1, 0.1, 0.2);
+let text = Color::from_rgb(0.9, 0.9, 1.0);
+
+// Automatically adjust text if not readable
+let readable_text = palette::readable(background, text);
+```
+
+### Test Both Light and Dark Modes
+
+If your app supports theme switching, test both:
+
+```rust
+let extended = theme.extended_palette();
+if extended.is_dark {
+    // Dark mode specific styling
+} else {
+    // Light mode specific styling
+}
+```
+
+### Use Semantic Colors
+
+Leverage the semantic color categories:
+
+```rust
+// Good: Semantic meaning
+button("Save").style(button::success)
+text("Error!").style(text::danger)
+
+// Avoid: Direct color values
+button("Save").style(|_, _| Style {
+    background: Some(Color::from_rgb(0.3, 0.8, 0.4).into()),
+    // ...
+})
+```
+
+## See Also
+
+- [Theme Overview](/api/theme/overview) - Understanding themes
+- [Built-in Themes](/api/theme/built-in-themes) - Available themes
+- [Palette](/api/theme/palette) - Color palette structure
+- [Widget Styling](/guides/styling) - Applying themes to widgets

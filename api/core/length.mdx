@@ -1,0 +1,305 @@
+---
+title: Length
+description: Strategies for filling space in widget layouts
+---
+
+The `Length` enum defines how widgets should occupy space along a dimension (width or height) in Iced layouts.
+
+## Type Definition
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Length {
+    Fill,
+    FillPortion(u16),
+    Shrink,
+    Fixed(f32),
+}
+```
+
+## Variants
+
+### Fill
+
+Fills all remaining space available in the parent container.
+
+```rust
+Length::Fill
+```
+
+**Example:**
+
+```rust
+use iced::widget::container;
+use iced_core::Length;
+
+container(content)
+    .width(Length::Fill)  // Takes up all horizontal space
+    .height(Length::Fill) // Takes up all vertical space
+```
+
+### FillPortion
+
+Fills a portion of the remaining space relative to other elements with `Fill` or `FillPortion`.
+
+```rust
+Length::FillPortion(u16)
+```
+
+<ParamField path="portion" type="u16">
+  The relative portion of space to occupy. Higher values take proportionally more space.
+</ParamField>
+
+The space is distributed proportionally based on the portion values. For example:
+- Element with `FillPortion(2)` + Element with `FillPortion(3)` = 2/5 and 3/5 of remaining space
+- `Length::Fill` is equivalent to `Length::FillPortion(1)`
+
+**Example:**
+
+```rust
+use iced::widget::row;
+use iced_core::Length;
+
+row([
+    container(left_panel).width(Length::FillPortion(2)),   // Gets 2/5 of space
+    container(right_panel).width(Length::FillPortion(3)),  // Gets 3/5 of space
+])
+```
+
+### Shrink
+
+Occupies the minimum space needed to fit the widget's content.
+
+```rust
+Length::Shrink
+```
+
+**Example:**
+
+```rust
+use iced::widget::container;
+use iced_core::Length;
+
+container(text("Hello"))
+    .width(Length::Shrink)  // Only as wide as the text
+    .height(Length::Shrink) // Only as tall as the text
+```
+
+### Fixed
+
+Occupies a fixed amount of space in pixels.
+
+```rust
+Length::Fixed(f32)
+```
+
+<ParamField path="pixels" type="f32">
+  The exact size in pixels
+</ParamField>
+
+**Example:**
+
+```rust
+use iced::widget::container;
+use iced_core::Length;
+
+container(content)
+    .width(Length::Fixed(200.0))  // Exactly 200 pixels wide
+    .height(Length::Fixed(100.0)) // Exactly 100 pixels tall
+```
+
+## Methods
+
+### fill_factor
+
+Returns the fill factor of the length. This is used internally by layout engines to calculate space distribution.
+
+```rust
+pub fn fill_factor(&self) -> u16
+```
+
+**Returns:**
+- `Fill` → `1`
+- `FillPortion(n)` → `n`
+- `Shrink` → `0`
+- `Fixed(_)` → `0`
+
+**Example:**
+
+```rust
+use iced_core::Length;
+
+assert_eq!(Length::Fill.fill_factor(), 1);
+assert_eq!(Length::FillPortion(5).fill_factor(), 5);
+assert_eq!(Length::Shrink.fill_factor(), 0);
+assert_eq!(Length::Fixed(100.0).fill_factor(), 0);
+```
+
+### is_fill
+
+Returns `true` if the length is either `Fill` or `FillPortion`.
+
+```rust
+pub fn is_fill(&self) -> bool
+```
+
+**Example:**
+
+```rust
+use iced_core::Length;
+
+assert!(Length::Fill.is_fill());
+assert!(Length::FillPortion(3).is_fill());
+assert!(!Length::Shrink.is_fill());
+assert!(!Length::Fixed(100.0).is_fill());
+```
+
+### fluid
+
+Returns the "fluid" variant of the length:
+- `Shrink` if the length is `Shrink` or `Fixed`
+- `Fill` if the length is `Fill` or `FillPortion`
+
+```rust
+pub fn fluid(&self) -> Self
+```
+
+**Example:**
+
+```rust
+use iced_core::Length;
+
+assert_eq!(Length::Fixed(100.0).fluid(), Length::Shrink);
+assert_eq!(Length::Shrink.fluid(), Length::Shrink);
+assert_eq!(Length::Fill.fluid(), Length::Fill);
+assert_eq!(Length::FillPortion(5).fluid(), Length::Fill);
+```
+
+### enclose
+
+Adapts the length to contain another length and match its fluidity. If the current length is `Shrink` and the other is `Fill` or `FillPortion`, returns the other length.
+
+```rust
+pub fn enclose(self, other: Length) -> Self
+```
+
+<ParamField path="other" type="Length">
+  The length to enclose
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Length;
+
+let shrink = Length::Shrink;
+let fill = Length::Fill;
+
+assert_eq!(shrink.enclose(fill), fill);
+assert_eq!(fill.enclose(shrink), fill);
+```
+
+## Conversions
+
+### From Pixels
+
+You can convert a `Pixels` type to `Length::Fixed`:
+
+```rust
+impl From<Pixels> for Length
+```
+
+### From f32
+
+You can convert an `f32` directly to `Length::Fixed`:
+
+```rust
+impl From<f32> for Length
+```
+
+**Example:**
+
+```rust
+use iced_core::Length;
+
+let length: Length = 200.0.into();
+assert_eq!(length, Length::Fixed(200.0));
+```
+
+### From u32
+
+You can convert a `u32` directly to `Length::Fixed`:
+
+```rust
+impl From<u32> for Length
+```
+
+**Example:**
+
+```rust
+use iced_core::Length;
+
+let length: Length = 200u32.into();
+assert_eq!(length, Length::Fixed(200.0));
+```
+
+## Common Patterns
+
+### Responsive Layouts
+
+Combine different length types to create responsive layouts:
+
+```rust
+use iced::widget::{row, container};
+use iced_core::Length;
+
+row([
+    // Sidebar: fixed width
+    container(sidebar).width(Length::Fixed(200.0)),
+    
+    // Main content: fills remaining space
+    container(main_content).width(Length::Fill),
+])
+```
+
+### Proportional Sizing
+
+Use `FillPortion` for proportional layouts:
+
+```rust
+use iced::widget::column;
+use iced_core::Length;
+
+column([
+    // Header: 1 part
+    container(header).height(Length::FillPortion(1)),
+    
+    // Content: 4 parts (4x larger)
+    container(content).height(Length::FillPortion(4)),
+    
+    // Footer: 1 part
+    container(footer).height(Length::FillPortion(1)),
+])
+```
+
+### Content-Sized Elements
+
+Use `Shrink` for buttons, labels, and other content-sized widgets:
+
+```rust
+use iced::widget::button;
+use iced_core::Length;
+
+button("Click Me")
+    .width(Length::Shrink)  // Button is only as wide as the text + padding
+```
+
+## Layout Engine Behavior
+
+The layout engine processes lengths in this order:
+
+1. **Fixed** sizes are allocated first
+2. **Shrink** elements are sized to their content
+3. **Fill/FillPortion** elements share the remaining space proportionally
+
+Understanding this order helps predict how your layouts will behave when space is constrained.

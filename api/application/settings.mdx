@@ -1,0 +1,197 @@
+---
+title: Settings
+description: Configure your iced application's runtime settings
+---
+
+The `Settings` struct configures runtime behavior for iced applications, including fonts, text rendering, and graphics options.
+
+## Structure Definition
+
+```rust
+#[derive(Debug, Clone)]
+pub struct Settings {
+    pub id: Option<String>,
+    pub fonts: Vec<Cow<'static, [u8]>>,
+    pub default_font: Font,
+    pub default_text_size: Pixels,
+    pub antialiasing: bool,
+    pub vsync: bool,
+}
+```
+
+## Fields
+
+<ParamField path="id" type="Option<String>" default="None">
+  The identifier of the application. If provided, this identifier may be used to identify the application or communicate with it through the windowing system.
+</ParamField>
+
+<ParamField path="fonts" type="Vec<Cow<'static, [u8]>>" default="Vec::new()">
+  The fonts to load on boot. Add custom font files as byte arrays to make them available throughout your application.
+</ParamField>
+
+<ParamField path="default_font" type="Font" default="Font::default()">
+  The default `Font` to be used. By default, it uses `Family::SansSerif`.
+</ParamField>
+
+<ParamField path="default_text_size" type="Pixels" default="Pixels(16.0)">
+  The text size that will be used by default throughout the application.
+</ParamField>
+
+<ParamField path="antialiasing" type="bool" default="true">
+  If set to true, the renderer will try to perform antialiasing for some primitives. Enabling it can produce a smoother result in some widgets, like the `canvas` widget, at a performance cost.
+</ParamField>
+
+<ParamField path="vsync" type="bool" default="true">
+  Whether or not to attempt to synchronize rendering when possible. Disabling it can improve rendering performance on some platforms.
+</ParamField>
+
+## Default Settings
+
+```rust
+Settings::default() // Returns:
+// Settings {
+//     id: None,
+//     fonts: Vec::new(),
+//     default_font: Font::default(),
+//     default_text_size: Pixels(16.0),
+//     antialiasing: true,
+//     vsync: true,
+// }
+```
+
+## Configuration with Application Builder
+
+The `Application` builder provides convenient methods to configure settings:
+
+### Using `.settings()` Method
+
+```rust
+use iced::{Settings, Pixels, Font};
+
+iced::application(State::new, update, view)
+    .settings(Settings {
+        id: Some("com.example.myapp".to_string()),
+        default_text_size: Pixels(18.0),
+        antialiasing: true,
+        vsync: false,
+        ..Settings::default()
+    })
+    .run()
+```
+
+### Using Builder Methods
+
+```rust
+iced::application(State::new, update, view)
+    .antialiasing(true)
+    .default_font(Font::MONOSPACE)
+    .font(include_bytes!("../fonts/custom-font.ttf").as_slice())
+    .run()
+```
+
+## Examples
+
+### Custom Font Loading
+
+```rust
+use iced::Font;
+
+const CUSTOM_FONT: &[u8] = include_bytes!("../assets/CustomFont.ttf");
+
+pub fn main() -> iced::Result {
+    iced::application(State::default, update, view)
+        .font(CUSTOM_FONT)
+        .default_font(Font {
+            family: iced::font::Family::Name("Custom Font"),
+            ..Font::DEFAULT
+        })
+        .run()
+}
+```
+
+### Performance Optimization
+
+```rust
+use iced::Settings;
+
+pub fn main() -> iced::Result {
+    iced::application(State::default, update, view)
+        .settings(Settings {
+            antialiasing: false,  // Disable for better performance
+            vsync: false,          // Disable for higher frame rates
+            ..Settings::default()
+        })
+        .run()
+}
+```
+
+### Application Identifier
+
+```rust
+use iced::Settings;
+
+pub fn main() -> iced::Result {
+    iced::application(State::default, update, view)
+        .settings(Settings {
+            id: Some("com.mycompany.myapp".to_string()),
+            ..Settings::default()
+        })
+        .run()
+}
+```
+
+### Larger Default Text Size
+
+```rust
+use iced::{Settings, Pixels};
+
+pub fn main() -> iced::Result {
+    iced::application(State::default, update, view)
+        .settings(Settings {
+            default_text_size: Pixels(20.0),
+            ..Settings::default()
+        })
+        .run()
+}
+```
+
+## Builder Methods Reference
+
+The `Application` struct provides these methods for settings configuration:
+
+| Method | Description | Source Location |
+|--------|-------------|----------------|
+| `.settings(settings)` | Sets all settings at once | `~/workspace/source/src/application.rs:213` |
+| `.antialiasing(bool)` | Enables/disables antialiasing | `~/workspace/source/src/application.rs:218` |
+| `.default_font(font)` | Sets the default font | `~/workspace/source/src/application.rs:229` |
+| `.font(bytes)` | Adds a font to load at startup | `~/workspace/source/src/application.rs:240` |
+
+## Performance Considerations
+
+### Antialiasing
+
+- **Enabled (default)**: Smoother appearance, especially for canvas widgets and diagonal lines
+- **Disabled**: Better performance, crisper edges for pixel-perfect designs
+
+### VSync
+
+- **Enabled (default)**: Prevents screen tearing, synchronizes with display refresh rate
+- **Disabled**: Higher potential frame rates, may introduce tearing
+
+### Font Loading
+
+Fonts are loaded at application startup. Loading many large fonts can increase startup time. Consider:
+
+- Only loading fonts you actually use
+- Using font subsetting to reduce file size
+- Lazy-loading fonts if possible
+
+## Location in Source
+
+`~/workspace/source/core/src/settings.rs:8`
+
+## Related
+
+- [Application Builder](/api/application/overview) - Main application configuration
+- [Window Settings](/api/runtime/window) - Window-specific configuration
+- [Styling](/guides/styling) - Styling and theming guide

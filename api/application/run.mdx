@@ -1,0 +1,189 @@
+---
+title: iced::run
+description: Run a basic iced application with default settings
+---
+
+The `run` function provides the simplest way to launch an iced application. It's equivalent to chaining `application()` with `Application::run()`.
+
+## Function Signature
+
+```rust
+pub fn run<State, Message, Theme, Renderer>(
+    update: impl application::UpdateFn<State, Message> + 'static,
+    view: impl for<'a> application::ViewFn<'a, State, Message, Theme, Renderer> + 'static,
+) -> Result
+where
+    State: Default + 'static,
+    Message: Send + message::MaybeDebug + message::MaybeClone + 'static,
+    Theme: theme::Base + 'static,
+    Renderer: program::Renderer + 'static,
+```
+
+<Note>
+  The `run` function requires `State` to implement `Default`. For custom initialization logic, use the `application()` builder instead.
+</Note>
+
+## Parameters
+
+<ParamField path="update" type="UpdateFn">
+  The update function that processes messages and modifies state. Can return `()` or `Task<Message>`.
+</ParamField>
+
+<ParamField path="view" type="ViewFn">
+  The view function that renders the UI from state. Must return something convertible to `Element`.
+</ParamField>
+
+## Returns
+
+`Result` - Returns `Ok(())` on successful execution or an `Error` if the application failed to start or crashed.
+
+## Examples
+
+### Basic Counter
+
+```rust
+use iced::widget::{button, column, text, Column};
+
+pub fn main() -> iced::Result {
+    iced::run(update, view)
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Increment,
+}
+
+fn update(value: &mut u64, message: Message) {
+    match message {
+        Message::Increment => *value += 1,
+    }
+}
+
+fn view(value: &u64) -> Column<Message> {
+    column![
+        text(value),
+        button("+").on_press(Message::Increment),
+    ]
+}
+```
+
+### With Custom State
+
+```rust
+use iced::widget::{button, text, column};
+use iced::Element;
+
+#[derive(Default)]
+struct Counter {
+    value: u64,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Increment,
+    Decrement,
+}
+
+fn update(counter: &mut Counter, message: Message) {
+    match message {
+        Message::Increment => counter.value += 1,
+        Message::Decrement => counter.value = counter.value.saturating_sub(1),
+    }
+}
+
+fn view(counter: &Counter) -> Element<Message> {
+    column![
+        text(counter.value).size(30),
+        button("+").on_press(Message::Increment),
+        button("-").on_press(Message::Decrement),
+    ]
+    .spacing(10)
+    .into()
+}
+
+pub fn main() -> iced::Result {
+    iced::run(update, view)
+}
+```
+
+### With Tasks
+
+```rust
+use iced::{Task, Element};
+use iced::widget::{button, text, column};
+
+#[derive(Default)]
+struct State {
+    count: u64,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Increment,
+    AsyncIncrement,
+    CompleteAsync(u64),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::Increment => {
+            state.count += 1;
+            Task::none()
+        }
+        Message::AsyncIncrement => {
+            Task::perform(
+                async { 1 },
+                Message::CompleteAsync,
+            )
+        }
+        Message::CompleteAsync(value) => {
+            state.count += value;
+            Task::none()
+        }
+    }
+}
+
+fn view(state: &State) -> Element<Message> {
+    column![
+        text(state.count),
+        button("Increment").on_press(Message::Increment),
+        button("Async Increment").on_press(Message::AsyncIncrement),
+    ]
+    .spacing(10)
+    .into()
+}
+
+pub fn main() -> iced::Result {
+    iced::run(update, view)
+}
+```
+
+## When to Use
+
+Use `iced::run` when:
+
+- You want to quickly prototype an application
+- Your state implements `Default`
+- You don't need to customize window settings, themes, or other configuration
+- You're creating a simple application without complex initialization
+
+## When to Use `application()` Instead
+
+Use the [`application()`](/api/application/overview) builder when:
+
+- You need custom initialization logic (returning a `Task` on boot)
+- You want to configure window settings (size, position, decorations)
+- You need to set a custom theme
+- You want to add subscriptions
+- You need to load custom fonts
+- You want to configure rendering settings
+
+## Location in Source
+
+`~/workspace/source/src/lib.rs:706`
+
+## Related
+
+- [application()](/api/application/overview) - Application builder for more control
+- [Application::run()](/api/application/overview#running-applications) - Runs a configured application
+- [Settings](/api/application/settings) - Application settings configuration

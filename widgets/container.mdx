@@ -1,0 +1,372 @@
+---
+title: Container
+description: Widget for aligning and styling a single child element
+---
+
+The `Container` widget wraps a single child element and provides control over alignment, padding, and styling. It's essential for creating well-structured layouts.
+
+## Basic Usage
+
+```rust
+use iced::widget::container;
+
+fn view(state: &State) -> Element<Message> {
+    container("This text is centered inside a rounded box!")
+        .padding(10)
+        .center(800)
+        .style(container::rounded_box)
+        .into()
+}
+```
+
+## Builder Methods
+
+### `new(content: impl Into<Element>)`
+
+Creates a new container with the given content.
+
+```rust
+container(text("Hello"))
+```
+
+### `padding(padding: impl Into<Padding>)`
+
+Sets the padding around the content.
+
+```rust
+container(content).padding(20)
+container(content).padding([10, 20])        // vertical, horizontal
+container(content).padding([10, 20, 30, 40])  // top, right, bottom, left
+```
+
+### `width(width: impl Into<Length>)`
+
+Sets the container width.
+
+```rust
+container(content).width(Length::Fill)
+container(content).width(400)
+```
+
+### `height(height: impl Into<Length>)`
+
+Sets the container height.
+
+```rust
+container(content).height(Length::Fill)
+container(content).height(200)
+```
+
+### `max_width(max_width: impl Into<Pixels>)`
+
+Sets the maximum width.
+
+```rust
+container(content)
+    .width(Length::Fill)
+    .max_width(600)
+```
+
+### `max_height(max_height: impl Into<Pixels>)`
+
+Sets the maximum height.
+
+```rust
+container(content)
+    .height(Length::Fill)
+    .max_height(400)
+```
+
+### Alignment Methods
+
+#### `center(length: impl Into<Length>)`
+
+Centers content both horizontally and vertically.
+
+```rust
+container(text("Centered"))
+    .center(Length::Fill)
+```
+
+#### `center_x(width: impl Into<Length>)`
+
+Centers content horizontally.
+
+```rust
+container(button("Click"))
+    .center_x(Length::Fill)
+```
+
+#### `center_y(height: impl Into<Length>)`
+
+Centers content vertically.
+
+```rust
+container(text("Vertically centered"))
+    .center_y(400)
+```
+
+#### `align_x(alignment: alignment::Horizontal)`
+
+Sets horizontal alignment.
+
+```rust
+use iced::alignment;
+
+container(content)
+    .width(Length::Fill)
+    .align_x(alignment::Horizontal::Right)
+```
+
+#### `align_y(alignment: alignment::Vertical)`
+
+Sets vertical alignment.
+
+```rust
+use iced::alignment;
+
+container(content)
+    .height(200)
+    .align_y(alignment::Vertical::Bottom)
+```
+
+#### Helper Methods
+
+```rust
+// Alignment shortcuts
+container(content).align_left(Length::Fill)
+container(content).align_right(Length::Fill)
+container(content).align_top(200)
+container(content).align_bottom(200)
+```
+
+### `clip(clip: bool)`
+
+Sets whether content should be clipped on overflow.
+
+```rust
+container(large_content)
+    .width(200)
+    .height(200)
+    .clip(true)
+```
+
+### `style(style_fn: impl Fn(&Theme) -> Style)`
+
+Applies custom styling.
+
+```rust
+container(content).style(|theme| {
+    container::Style {
+        background: Some(Color::from_rgb(0.9, 0.9, 0.9).into()),
+        border: Border::rounded(10),
+        ..Default::default()
+    }
+})
+```
+
+## Built-in Styles
+
+### `container::transparent`
+
+No background or border (default).
+
+```rust
+container(content).style(container::transparent)
+```
+
+### `container::rounded_box`
+
+Rounded corners with a background.
+
+```rust
+container(content).style(container::rounded_box)
+```
+
+### `container::bordered_box`
+
+Background with a border.
+
+```rust
+container(content).style(container::bordered_box)
+```
+
+### `container::dark`
+
+Dark background with white text.
+
+```rust
+container(text("Dark mode")).style(container::dark)
+```
+
+### Semantic Styles
+
+```rust
+container(content).style(container::primary)
+container(content).style(container::secondary)
+container(content).style(container::success)
+container(content).style(container::warning)
+container(content).style(container::danger)
+```
+
+### `container::background`
+
+Custom background color.
+
+```rust
+use iced::Color;
+
+container(content)
+    .style(container::background(Color::from_rgb(0.8, 0.8, 1.0)))
+```
+
+## Style Structure
+
+```rust
+pub struct Style {
+    /// Text color of the container
+    pub text_color: Option<Color>,
+    /// Background of the container
+    pub background: Option<Background>,
+    /// Border of the container
+    pub border: Border,
+    /// Shadow of the container
+    pub shadow: Shadow,
+    /// Whether to snap to pixel grid
+    pub snap: bool,
+}
+```
+
+## Common Patterns
+
+### Card Layout
+
+```rust
+use iced::widget::{column, container, text};
+use iced::Length;
+
+fn card(title: &str, content: &str) -> Element<Message> {
+    container(
+        column![
+            text(title).size(20),
+            text(content),
+        ]
+        .spacing(10)
+    )
+    .padding(20)
+    .width(Length::Fill)
+    .style(container::rounded_box)
+    .into()
+}
+```
+
+### Centered Dialog
+
+```rust
+use iced::widget::{button, column, container, text};
+
+fn dialog(message: &str) -> Element<Message> {
+    container(
+        container(
+            column![
+                text(message).size(16),
+                button("OK")
+                    .on_press(Message::CloseDialog)
+                    .width(Length::Fill),
+            ]
+            .spacing(20)
+        )
+        .padding(30)
+        .max_width(400)
+        .style(container::bordered_box)
+    )
+    .center(Length::Fill)
+    .into()
+}
+```
+
+### Sidebar Layout
+
+```rust
+use iced::widget::{container, row};
+use iced::{alignment, Length};
+
+fn layout(sidebar: Element<Message>, content: Element<Message>) -> Element<Message> {
+    row![
+        container(sidebar)
+            .width(250)
+            .height(Length::Fill)
+            .style(container::dark),
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(20),
+    ]
+    .into()
+}
+```
+
+### Header Section
+
+```rust
+use iced::widget::{container, text};
+use iced::{alignment, Color, Length};
+
+fn header(title: &str) -> Element<Message> {
+    container(
+        text(title)
+            .size(24)
+            .color(Color::WHITE)
+    )
+    .width(Length::Fill)
+    .padding(20)
+    .style(container::primary)
+    .align_y(alignment::Vertical::Center)
+    .into()
+}
+```
+
+### Status Banner
+
+```rust
+use iced::widget::{container, text};
+use iced::Length;
+
+enum StatusLevel {
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
+fn status_banner(message: &str, level: StatusLevel) -> Element<Message> {
+    let style = match level {
+        StatusLevel::Info => container::primary,
+        StatusLevel::Success => container::success,
+        StatusLevel::Warning => container::warning,
+        StatusLevel::Error => container::danger,
+    };
+    
+    container(text(message))
+        .width(Length::Fill)
+        .padding(15)
+        .style(style)
+        .into()
+}
+```
+
+## Tips and Best Practices
+
+1. **Use containers for spacing** - Add padding and alignment to single elements
+2. **Combine with Row/Column** - Containers work well inside layout widgets
+3. **Style consistently** - Use built-in styles for visual consistency
+4. **Mind the width/height** - Containers don't have intrinsic size
+5. **Use max_width for readability** - Limit content width on wide screens
+6. **Clip when needed** - Prevent content overflow with `.clip(true)`
+
+## Related Widgets
+
+- [Row/Column](/widgets/row-and-column) - For multiple children
+- [Scrollable](/widgets/scrollable) - For scrollable containers
+- [Button](/widgets/button) - Similar styling options

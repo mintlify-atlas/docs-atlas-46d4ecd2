@@ -1,0 +1,119 @@
+---
+title: 'Widget Overview'
+description: 'Overview of Iced widgets for building user interfaces'
+---
+
+## Introduction
+
+Widgets are the building blocks of Iced applications. They provide interactive components that users can see and interact with. Each widget is generic over a `Message` type, allowing it to produce application-specific messages when interacted with.
+
+## Core Widget Concepts
+
+### Message Production
+
+Widgets communicate with your application through messages. When a user interacts with a widget (clicking a button, typing in a text input, etc.), the widget produces a message that your application's `update` function can handle.
+
+```rust
+enum Message {
+    ButtonPressed,
+    TextChanged(String),
+    SliderMoved(f32),
+}
+```
+
+### Widget Lifecycle
+
+Every widget implements the `Widget` trait, which provides methods for:
+
+- **Layout**: Computing the size and position of the widget
+- **Event handling**: Responding to user interactions
+- **Drawing**: Rendering the widget on screen
+- **Styling**: Customizing the visual appearance
+
+## Available Widgets
+
+### Interactive Widgets
+
+<CardGroup cols={2}>
+  <Card title="Button" icon="hand-pointer" href="/api/widget/button">
+    A clickable button that produces messages when pressed
+  </Card>
+  
+  <Card title="Checkbox" icon="check-square" href="/api/widget/checkbox">
+    A toggleable checkbox for binary choices
+  </Card>
+  
+  <Card title="Text Input" icon="keyboard" href="/api/widget/text-input">
+    A field for entering text with support for passwords and validation
+  </Card>
+  
+  <Card title="Slider" icon="sliders" href="/api/widget/slider">
+    A horizontal bar for selecting values from a range
+  </Card>
+</CardGroup>
+
+### Layout Widgets
+
+<CardGroup cols={2}>
+  <Card title="Container" icon="box" href="/api/widget/container">
+    A widget that aligns and decorates its contents
+  </Card>
+  
+  <Card title="Scrollable" icon="arrows-up-down" href="/api/widget/scrollable">
+    A scrollable container for displaying large amounts of content
+  </Card>
+</CardGroup>
+
+## Common Patterns
+
+### Disabled States
+
+Many widgets can be disabled by not providing an event handler:
+
+```rust
+// Enabled button
+button("Click me").on_press(Message::ButtonPressed)
+
+// Disabled button
+button("Disabled")
+```
+
+### Styling
+
+All widgets support custom styling through the `style` method:
+
+```rust
+button("Styled")
+    .style(|theme, status| {
+        button::Style {
+            background: Some(Background::Color(Color::from_rgb(0.0, 0.5, 1.0))),
+            text_color: Color::WHITE,
+            ..button::Style::default()
+        }
+    })
+```
+
+### Builder Pattern
+
+Widgets use a fluent builder pattern for configuration:
+
+```rust
+text_input("Placeholder", &value)
+    .width(Length::Fill)
+    .padding(10)
+    .size(16)
+    .on_input(Message::TextChanged)
+    .on_submit(Message::Submitted)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Button" href="/api/widget/button">
+    Learn about button widgets and interactions
+  </Card>
+  
+  <Card title="Layout Guide" href="/guides/layout">
+    Understand how to arrange widgets
+  </Card>
+</CardGroup>

@@ -1,0 +1,453 @@
+---
+title: Canvas
+description: Widget for drawing custom 2D graphics and interactive visualizations
+---
+
+The `Canvas` widget enables custom 2D graphics rendering through the `Program` trait. It's perfect for charts, diagrams, games, and any custom drawing needs.
+
+## Overview
+
+Canvas works by implementing the `Program` trait, which defines:
+- What to draw (`draw` method)
+- How to handle events (`update` method)
+- Mouse interactions (`mouse_interaction` method)
+
+## Basic Usage
+
+Here's a simple example that draws a circle:
+
+```rust
+use iced::widget::canvas;
+use iced::{Color, Rectangle, Renderer, Theme};
+use iced::mouse;
+
+#[derive(Debug)]
+struct Circle {
+    radius: f32,
+}
+
+impl<Message> canvas::Program<Message> for Circle {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        
+        let circle = canvas::Path::circle(frame.center(), self.radius);
+        frame.fill(&circle, Color::BLACK);
+        
+        vec![frame.into_geometry()]
+    }
+}
+
+fn view() -> Element<Message> {
+    canvas(Circle { radius: 50.0 })
+        .width(200)
+        .height(200)
+        .into()
+}
+```
+
+## Canvas Widget Methods
+
+### `new(program: impl Program)`
+
+Creates a new canvas with the given program.
+
+```rust
+canvas(MyDrawingProgram::new())
+```
+
+### `width(width: impl Into<Length>)`
+
+Sets the canvas width.
+
+```rust
+canvas(program).width(Length::Fill)
+```
+
+### `height(height: impl Into<Length>)`
+
+Sets the canvas height.
+
+```rust
+canvas(program).height(400)
+```
+
+## The Program Trait
+
+Implement this trait to define your canvas behavior:
+
+```rust
+pub trait Program<Message, Theme, Renderer> {
+    type State: Default;
+
+    fn draw(
+        &self,
+        state: &Self::State,
+        renderer: &Renderer,
+        theme: &Theme,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> Vec<Geometry>;
+
+    fn update(
+        &self,
+        state: &mut Self::State,
+        event: &Event,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> Option<Action<Message>> {
+        None
+    }
+
+    fn mouse_interaction(
+        &self,
+        state: &Self::State,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> mouse::Interaction {
+        mouse::Interaction::default()
+    }
+}
+```
+
+## Drawing Primitives
+
+### Frame
+
+The `Frame` is your drawing surface:
+
+```rust
+let mut frame = canvas::Frame::new(renderer, bounds.size());
+```
+
+### Paths
+
+Create shapes with paths:
+
+```rust
+use iced::widget::canvas::Path;
+
+// Circle
+let circle = Path::circle(center, radius);
+
+// Rectangle
+let rect = Path::rectangle(Point::ORIGIN, size);
+
+// Line
+let line = Path::line(from, to);
+
+// Custom path
+let mut builder = canvas::path::Builder::new();
+builder.move_to(Point::new(0.0, 0.0));
+builder.line_to(Point::new(100.0, 100.0));
+builder.line_to(Point::new(100.0, 0.0));
+builder.close();
+let path = builder.build();
+```
+
+### Fill and Stroke
+
+```rust
+use iced::widget::canvas::{Fill, Stroke};
+
+// Fill
+frame.fill(&path, Color::from_rgb(0.2, 0.5, 0.8));
+
+// Stroke
+frame.stroke(
+    &path,
+    Stroke::default()
+        .with_color(Color::BLACK)
+        .with_width(2.0)
+);
+```
+
+### Text
+
+Draw text on the canvas:
+
+```rust
+use iced::widget::canvas::Text;
+use iced::{Point, Color};
+
+frame.fill_text(Text {
+    content: String::from("Hello, Canvas!"),
+    position: Point::new(50.0, 50.0),
+    color: Color::BLACK,
+    size: 20.0.into(),
+    ..Text::default()
+});
+```
+
+### Images
+
+Draw images:
+
+```rust
+use iced::widget::canvas::Image;
+
+frame.draw_image(
+    Rectangle::new(Point::ORIGIN, size),
+    image_handle,
+);
+```
+
+## Interactive Canvas Example
+
+```rust
+use iced::widget::canvas::{self, Canvas, Event, Program};
+use iced::{mouse, Element, Point, Rectangle, Color};
+
+struct DrawingBoard {
+    // Program configuration
+}
+
+#[derive(Default)]
+struct State {
+    points: Vec<Point>,
+    dragging: bool,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    PointAdded(Point),
+}
+
+impl Program<Message> for DrawingBoard {
+    type State = State;
+
+    fn draw(
+        &self,
+        state: &State,
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+
+        // Draw all points
+        for point in &state.points {
+            let circle = canvas::Path::circle(*point, 3.0);
+            frame.fill(&circle, Color::from_rgb(0.0, 0.0, 1.0));
+        }
+
+        vec![frame.into_geometry()]
+    }
+
+    fn update(
+        &self,
+        state: &mut State,
+        event: &Event,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> Option<canvas::Action<Message>> {
+        match event {
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                if let Some(position) = cursor.position_in(bounds) {
+                    state.points.push(position);
+                    state.dragging = true;
+                    return Some(canvas::Action::publish(Message::PointAdded(position)));
+                }
+            }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                state.dragging = false;
+            }
+            Event::Mouse(mouse::Event::CursorMoved { .. }) => {
+                if state.dragging {
+                    if let Some(position) = cursor.position_in(bounds) {
+                        state.points.push(position);
+                        return Some(canvas::Action::request_redraw());
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        None
+    }
+
+    fn mouse_interaction(
+        &self,
+        _state: &State,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> mouse::Interaction {
+        if cursor.is_over(bounds) {
+            mouse::Interaction::Crosshair
+        } else {
+            mouse::Interaction::default()
+        }
+    }
+}
+```
+
+## Caching for Performance
+
+Use `Cache` to avoid redrawing static content:
+
+```rust
+use iced::widget::canvas::{self, Cache};
+
+struct MyProgram {
+    cache: Cache,
+}
+
+impl MyProgram {
+    fn new() -> Self {
+        Self {
+            cache: Cache::new(),
+        }
+    }
+}
+
+impl Program<Message> for MyProgram {
+    type State = ();
+
+    fn draw(
+        &self,
+        state: &State,
+        renderer: &Renderer,
+        theme: &Theme,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let geometry = self.cache.draw(renderer, bounds.size(), |frame| {
+            // Expensive drawing operations here
+            let circle = canvas::Path::circle(frame.center(), 50.0);
+            frame.fill(&circle, Color::BLACK);
+        });
+
+        vec![geometry]
+    }
+}
+```
+
+## Chart Example
+
+```rust
+use iced::widget::canvas::{self, Path, Stroke};
+use iced::{Color, Point, Rectangle};
+
+struct LineChart {
+    data: Vec<f32>,
+    max_value: f32,
+}
+
+impl<Message> canvas::Program<Message> for LineChart {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        
+        if self.data.is_empty() {
+            return vec![frame.into_geometry()];
+        }
+
+        let width = bounds.width;
+        let height = bounds.height;
+        let step = width / (self.data.len() - 1) as f32;
+
+        // Build path
+        let mut builder = canvas::path::Builder::new();
+        
+        for (i, value) in self.data.iter().enumerate() {
+            let x = i as f32 * step;
+            let y = height - (value / self.max_value * height);
+            let point = Point::new(x, y);
+            
+            if i == 0 {
+                builder.move_to(point);
+            } else {
+                builder.line_to(point);
+            }
+        }
+
+        let path = builder.build();
+        
+        frame.stroke(
+            &path,
+            Stroke::default()
+                .with_color(Color::from_rgb(0.0, 0.5, 1.0))
+                .with_width(2.0)
+        );
+
+        vec![frame.into_geometry()]
+    }
+}
+```
+
+## Animation Example
+
+```rust
+use std::time::Instant;
+use iced::widget::canvas;
+
+struct AnimatedCircle {
+    start_time: Instant,
+}
+
+impl<Message> canvas::Program<Message> for AnimatedCircle {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &(),
+        renderer: &Renderer,
+        _theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        
+        let elapsed = self.start_time.elapsed().as_secs_f32();
+        let radius = 20.0 + (elapsed * 2.0).sin() * 10.0;
+        
+        let circle = canvas::Path::circle(frame.center(), radius);
+        frame.fill(&circle, Color::from_rgb(0.2, 0.5, 0.8));
+
+        vec![frame.into_geometry()]
+    }
+
+    fn update(
+        &self,
+        _state: &mut (),
+        _event: &Event,
+        _bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Option<canvas::Action<Message>> {
+        // Request continuous redraw for animation
+        Some(canvas::Action::request_redraw())
+    }
+}
+```
+
+## Tips and Best Practices
+
+1. **Use caching** - Cache static content to improve performance
+2. **Request redraw only when needed** - Don't redraw on every event
+3. **Keep state minimal** - Store only what's necessary for drawing
+4. **Use appropriate line caps** - `LineCap::Round` for smooth lines
+5. **Consider coordinate systems** - Frame coordinates start at (0, 0) in top-left
+6. **Batch drawing operations** - Group similar operations together
+
+## Related Widgets
+
+- [Container](/widgets/container) - For positioning canvas
+- [Image](/widgets/all-widgets) - For static images
+- [Svg](/widgets/all-widgets) - For vector graphics

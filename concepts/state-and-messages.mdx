@@ -1,0 +1,293 @@
+---
+title: State and Messages
+description: Learn how to model your application's state and messages in Iced
+---
+
+# State and Messages
+
+In Iced, your application's behavior is defined by two key components: **State** (what data your application holds) and **Messages** (what events can change that data).
+
+## State
+
+State represents all the data your application needs to function. It can be as simple as a single value or as complex as a nested structure.
+
+### Simple State
+
+The simplest state is a primitive value:
+
+```rust
+// State is just a u64 counter
+fn main() -> iced::Result {
+    iced::run(update, view)  // u64::default() is 0
+}
+
+fn update(counter: &mut u64, message: Message) {
+    match message {
+        Message::Increment => *counter += 1,
+    }
+}
+
+fn view(counter: &u64) -> Element<'_, Message> {
+    button(text(counter)).on_press(Message::Increment).into()
+}
+```
+
+<Note>
+  When using `iced::run`, the state type must implement `Default`. The initial state is created by calling `State::default()`.
+</Note>
+
+### Custom State Structs
+
+For real applications, you'll want to define your own state struct:
+
+```rust
+#[derive(Default)]
+struct Counter {
+    value: u64,
+}
+
+fn update(counter: &mut Counter, message: Message) {
+    match message {
+        Message::Increment => counter.value += 1,
+    }
+}
+
+fn view(counter: &Counter) -> Element<'_, Message> {
+    button(text(counter.value)).on_press(Message::Increment).into()
+}
+```
+
+### Complex State
+
+State can contain any data your application needs:
+
+```rust
+#[derive(Default)]
+struct State {
+    input_value: String,
+    filter: Filter,
+    tasks: Vec<Task>,
+    dirty: bool,
+    saving: bool,
+}
+
+#[derive(Debug, Clone)]
+struct Task {
+    id: Uuid,
+    description: String,
+    completed: bool,
+    state: TaskState,
+}
+```
+
+<Info>
+  Your state can include any Rust types: primitives, strings, vectors, hash maps, custom enums, and more.
+</Info>
+
+### State Variants with Enums
+
+For applications with distinct modes or screens, use enums:
+
+```rust
+#[derive(Debug)]
+enum Todos {
+    Loading,
+    Loaded(State),
+}
+
+#[derive(Debug, Default)]
+struct State {
+    input_value: String,
+    tasks: Vec<Task>,
+}
+```
+
+This pattern allows you to:
+- Represent different application states explicitly
+- Ensure certain data only exists in specific states
+- Handle each state differently in your view and update logic
+
+## Messages
+
+Messages represent all the events that can occur in your application. They're the only way to change your state.
+
+### Defining Messages
+
+Messages are typically defined as enums:
+
+```rust
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    Increment,
+    Decrement,
+}
+```
+
+<Note>
+  Messages must implement `Clone` because they may be produced by multiple widgets or events.
+</Note>
+
+### Messages with Data
+
+Messages often carry data about the event:
+
+```rust
+#[derive(Debug, Clone)]
+enum Message {
+    InputChanged(String),
+    CreateTask,
+    FilterChanged(Filter),
+    TaskMessage(usize, TaskMessage),
+    TabPressed { shift: bool },
+}
+```
+
+<Tabs>
+  <Tab title="Tuple Variants">
+    ```rust
+    Message::TaskMessage(usize, TaskMessage)
+    //                   ^^^^^  ^^^^^^^^^^^^
+    //                   index  nested message
+    ```
+    
+    Use tuple variants when the data is positional and obvious from context.
+  </Tab>
+  <Tab title="Struct Variants">
+    ```rust
+    Message::TabPressed { shift: bool }
+    //                    ^^^^^^^^^^^^
+    //                    named field
+    ```
+    
+    Use struct variants when you want to name the fields for clarity.
+  </Tab>
+</Tabs>
+
+### Nested Messages
+
+For larger applications, you can nest messages to organize them by component:
+
+```rust
+enum Message {
+    Contacts(contacts::Message),
+    Conversation(conversation::Message),
+}
+
+mod contacts {
+    #[derive(Debug, Clone)]
+    pub enum Message {
+        Select(usize),
+        Search(String),
+    }
+}
+
+mod conversation {
+    #[derive(Debug, Clone)]
+    pub enum Message {
+        SendMessage(String),
+        LoadHistory,
+    }
+}
+```
+
+## The State-Message Connection
+
+State and Messages work together to define your application's behavior:
+
+<Steps>
+  <Step title="State Holds Data">
+    Your state struct contains all the data your UI displays:
+    ```rust
+    struct Counter {
+        value: u64,  // This is what we display
+    }
+    ```
+  </Step>
+  <Step title="Messages Describe Changes">
+    Your message enum describes what can change:
+    ```rust
+    enum Message {
+        Increment,  // This tells us to increase the value
+    }
+    ```
+  </Step>
+  <Step title="Update Applies Changes">
+    The update function connects them:
+    ```rust
+    fn update(counter: &mut Counter, message: Message) {
+        match message {
+            Message::Increment => counter.value += 1,
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Real-World Example
+
+Here's a complete example from the Iced counter example (`examples/counter/src/main.rs`):
+
+```rust
+use iced::widget::{button, column, text};
+use iced::Center;
+
+#[derive(Default)]
+struct Counter {
+    value: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    Increment,
+    Decrement,
+}
+
+impl Counter {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => {
+                self.value += 1;
+            }
+            Message::Decrement => {
+                self.value -= 1;
+            }
+        }
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        column![
+            button("Increment").on_press(Message::Increment),
+            text(self.value).size(50),
+            button("Decrement").on_press(Message::Decrement)
+        ]
+        .padding(20)
+        .align_x(Center)
+        .into()
+    }
+}
+
+pub fn main() -> iced::Result {
+    iced::run(Counter::update, Counter::view)
+}
+```
+
+## Best Practices
+
+<Card title="State Guidelines" icon="database">
+  - Keep state minimal - only store what you need
+  - Use `#[derive(Default)]` when possible for simple initialization
+  - Group related data into structs
+  - Use enums for states that are mutually exclusive
+</Card>
+
+<Card title="Message Guidelines" icon="message-square">
+  - Make messages descriptive - `Increment` is better than `ButtonPressed`
+  - Always derive `Clone` and `Debug`
+  - Include relevant data in the message
+  - Use nested messages to organize large applications
+</Card>
+
+## Next Steps
+
+- [View and Update](/concepts/view-and-update) - Learn how to build UIs and respond to messages
+- [Elements and Widgets](/concepts/elements-and-widgets) - Discover the building blocks of your UI

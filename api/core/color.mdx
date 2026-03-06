@@ -1,0 +1,488 @@
+---
+title: Color
+description: sRGB color representation with utility methods
+---
+
+The `Color` struct represents a color in the sRGB color space with RGBA components.
+
+## Type Definition
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Color {
+    pub r: f32,  // Red component, 0.0 - 1.0
+    pub g: f32,  // Green component, 0.0 - 1.0
+    pub b: f32,  // Blue component, 0.0 - 1.0
+    pub a: f32,  // Transparency, 0.0 - 1.0
+}
+```
+
+## Constants
+
+### BLACK
+
+```rust
+pub const BLACK: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+    a: 1.0,
+};
+```
+
+### WHITE
+
+```rust
+pub const WHITE: Color = Color {
+    r: 1.0,
+    g: 1.0,
+    b: 1.0,
+    a: 1.0,
+};
+```
+
+### TRANSPARENT
+
+```rust
+pub const TRANSPARENT: Color = Color {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+    a: 0.0,
+};
+```
+
+## Creating Colors
+
+### from_rgb
+
+Creates a color from RGB components (0.0 - 1.0), with full opacity.
+
+```rust
+pub const fn from_rgb(r: f32, g: f32, b: f32) -> Self
+```
+
+<ParamField path="r" type="f32">
+  Red component (0.0 - 1.0)
+</ParamField>
+
+<ParamField path="g" type="f32">
+  Green component (0.0 - 1.0)
+</ParamField>
+
+<ParamField path="b" type="f32">
+  Blue component (0.0 - 1.0)
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let red = Color::from_rgb(1.0, 0.0, 0.0);
+let green = Color::from_rgb(0.0, 1.0, 0.0);
+let blue = Color::from_rgb(0.0, 0.0, 1.0);
+```
+
+### from_rgba
+
+Creates a color from RGBA components (0.0 - 1.0).
+
+```rust
+pub const fn from_rgba(r: f32, g: f32, b: f32, a: f32) -> Self
+```
+
+<ParamField path="r" type="f32">
+  Red component (0.0 - 1.0)
+</ParamField>
+
+<ParamField path="g" type="f32">
+  Green component (0.0 - 1.0)
+</ParamField>
+
+<ParamField path="b" type="f32">
+  Blue component (0.0 - 1.0)
+</ParamField>
+
+<ParamField path="a" type="f32">
+  Alpha/transparency component (0.0 - 1.0)
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let semi_transparent_red = Color::from_rgba(1.0, 0.0, 0.0, 0.5);
+```
+
+### from_rgb8
+
+Creates a color from RGB8 components (0 - 255), with full opacity.
+
+```rust
+pub const fn from_rgb8(r: u8, g: u8, b: u8) -> Self
+```
+
+<ParamField path="r" type="u8">
+  Red component (0 - 255)
+</ParamField>
+
+<ParamField path="g" type="u8">
+  Green component (0 - 255)
+</ParamField>
+
+<ParamField path="b" type="u8">
+  Blue component (0 - 255)
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let red = Color::from_rgb8(255, 0, 0);
+let purple = Color::from_rgb8(128, 0, 128);
+```
+
+### from_rgba8
+
+Creates a color from RGB8 components (0 - 255) and an alpha value (0.0 - 1.0).
+
+```rust
+pub const fn from_rgba8(r: u8, g: u8, b: u8, a: f32) -> Self
+```
+
+<ParamField path="r" type="u8">
+  Red component (0 - 255)
+</ParamField>
+
+<ParamField path="g" type="u8">
+  Green component (0 - 255)
+</ParamField>
+
+<ParamField path="b" type="u8">
+  Blue component (0 - 255)
+</ParamField>
+
+<ParamField path="a" type="f32">
+  Alpha/transparency component (0.0 - 1.0)
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let semi_transparent_blue = Color::from_rgba8(0, 0, 255, 0.5);
+```
+
+### from_packed_rgb8
+
+Creates a color from RGB8 components packed in the lower 24 bits of a u32.
+
+```rust
+pub const fn from_packed_rgb8(rgb: u32) -> Self
+```
+
+<ParamField path="rgb" type="u32">
+  Packed RGB value (e.g., 0xFF0000 for red)
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let red = Color::from_packed_rgb8(0xFF0000);
+let green = Color::from_packed_rgb8(0x00FF00);
+let blue = Color::from_packed_rgb8(0x0000FF);
+```
+
+### from_packed_rgba8
+
+Creates a color from RGB8 components packed in a u32, with a separate alpha value.
+
+```rust
+pub const fn from_packed_rgba8(rgb: u32, a: f32) -> Self
+```
+
+<ParamField path="rgb" type="u32">
+  Packed RGB value
+</ParamField>
+
+<ParamField path="a" type="f32">
+  Alpha/transparency component (0.0 - 1.0)
+</ParamField>
+
+### from_linear_rgba
+
+Creates a color from linear RGBA components, converting to sRGB.
+
+```rust
+pub fn from_linear_rgba(r: f32, g: f32, b: f32, a: f32) -> Self
+```
+
+<ParamField path="r" type="f32">
+  Linear red component
+</ParamField>
+
+<ParamField path="g" type="f32">
+  Linear green component
+</ParamField>
+
+<ParamField path="b" type="f32">
+  Linear blue component
+</ParamField>
+
+<ParamField path="a" type="f32">
+  Alpha component
+</ParamField>
+
+## Color Manipulation
+
+### inverse
+
+Returns the inverted color (preserving alpha).
+
+```rust
+pub const fn inverse(self) -> Self
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let white = Color::WHITE;
+let black = white.inverse();
+```
+
+### scale_alpha
+
+Scales the alpha channel by the given factor.
+
+```rust
+pub const fn scale_alpha(self, factor: f32) -> Self
+```
+
+<ParamField path="factor" type="f32">
+  The scaling factor to apply to the alpha channel
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let opaque_red = Color::from_rgb(1.0, 0.0, 0.0);
+let half_transparent_red = opaque_red.scale_alpha(0.5);
+```
+
+## Accessibility Methods
+
+### relative_luminance
+
+Returns the relative luminance of the color according to WCAG 2.1.
+
+```rust
+pub fn relative_luminance(self) -> f32
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let luminance = Color::WHITE.relative_luminance();
+```
+
+### relative_contrast
+
+Returns the relative contrast ratio between this color and another according to WCAG 2.1.
+
+```rust
+pub fn relative_contrast(self, b: Self) -> f32
+```
+
+<ParamField path="b" type="Color">
+  The color to compare against
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let contrast = Color::BLACK.relative_contrast(Color::WHITE);
+// contrast will be 21.0 (maximum contrast)
+```
+
+### is_readable_on
+
+Returns `true` if the color is readable on the given background color (contrast ratio >= 6.0).
+
+```rust
+pub fn is_readable_on(self, background: Self) -> bool
+```
+
+<ParamField path="background" type="Color">
+  The background color
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let text_color = Color::BLACK;
+let background = Color::WHITE;
+
+assert!(text_color.is_readable_on(background));
+```
+
+## Conversion Methods
+
+### into_rgba8
+
+Converts the color to RGBA8 format (0 - 255 for each component).
+
+```rust
+pub const fn into_rgba8(self) -> [u8; 4]
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let color = Color::from_rgb(1.0, 0.5, 0.0);
+let [r, g, b, a] = color.into_rgba8();
+// r = 255, g = 128, b = 0, a = 255
+```
+
+### into_linear
+
+Converts the color to linear RGBA format.
+
+```rust
+pub fn into_linear(self) -> [f32; 4]
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let color = Color::from_rgb(1.0, 0.5, 0.0);
+let [r, g, b, a] = color.into_linear();
+```
+
+## String Parsing and Formatting
+
+### Parsing from String
+
+Colors can be parsed from hexadecimal strings in the following formats:
+- `#rgb` (e.g., `#f00` for red)
+- `#rgba` (e.g., `#f00f` for opaque red)
+- `#rrggbb` (e.g., `#ff0000` for red)
+- `#rrggbbaa` (e.g., `#ff0000ff` for opaque red)
+
+The `#` prefix is optional. If alpha is not specified, it defaults to 1.0 (fully opaque).
+
+```rust
+impl std::str::FromStr for Color
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+use std::str::FromStr;
+
+let red = Color::from_str("#ff0000").unwrap();
+let blue = Color::from_str("#00f").unwrap();
+let semi_transparent = Color::from_str("#ff000080").unwrap();
+```
+
+### Formatting to String
+
+Colors are formatted as hexadecimal strings. If alpha is 1.0, the format is `#rrggbb`. Otherwise, it's `#rrggbbaa`.
+
+```rust
+impl std::fmt::Display for Color
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let color = Color::from_rgb8(255, 0, 0);
+assert_eq!(color.to_string(), "#ff0000");
+
+let transparent_color = Color::from_rgba8(255, 0, 0, 0.5);
+assert_eq!(transparent_color.to_string(), "#ff000080");
+```
+
+## The color! Macro
+
+For static color values, use the `color!` macro which leverages compile-time evaluation:
+
+```rust
+use iced_core::{Color, color};
+
+// RGB8 format
+let red = color!(255, 0, 0);
+
+// RGBA8 format
+let semi_transparent_red = color!(255, 0, 0, 0.5);
+
+// Hexadecimal format
+let blue = color!(0x0000ff);
+let blue_transparent = color!(0x0000ff, 0.5);
+
+// Shorthand hexadecimal (expanded automatically)
+let white = color!(0xfff);  // Equivalent to 0xffffff
+```
+
+## Trait Implementations
+
+### From Arrays
+
+You can create colors from arrays:
+
+```rust
+impl From<[f32; 3]> for Color  // RGB
+impl From<[f32; 4]> for Color  // RGBA
+```
+
+**Example:**
+
+```rust
+use iced_core::Color;
+
+let rgb: Color = [1.0, 0.0, 0.0].into();
+let rgba: Color = [1.0, 0.0, 0.0, 0.5].into();
+```
+
+## Usage in Iced
+
+Colors are used throughout Iced for styling widgets:
+
+```rust
+use iced::widget::{container, text};
+use iced_core::Color;
+
+container(
+    text("Hello, World!")
+        .color(Color::WHITE)
+)
+.style(|_theme| {
+    container::Appearance {
+        background: Some(Color::from_rgb8(52, 152, 219).into()),
+        text_color: Some(Color::WHITE),
+        ..Default::default()
+    }
+})
+```

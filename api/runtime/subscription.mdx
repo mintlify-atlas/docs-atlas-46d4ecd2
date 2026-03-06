@@ -1,0 +1,200 @@
+---
+title: Subscription
+description: Subscribe to passive streams of events in Iced applications
+---
+
+# Subscription
+
+A `Subscription<T>` is a declarative request to listen to external events passively. Unlike tasks that perform actions on demand, subscriptions run continuously as long as they are returned from your `subscription` function.
+
+<Note>
+  Subscriptions must be returned from your `subscription` function to take effect. They represent long-running streams that are kept alive by the runtime.
+</Note>
+
+## Lifecycle
+
+When a subscription is first provided to the runtime, it builds and runs the underlying stream asynchronously. When a subscription stops being returned, the runtime kills its associated stream. The runtime uses the subscription's identity to track it.
+
+This allows you to declaratively subscribe to particular streams of data temporarily and whenever necessary—just like `view` fully dictates visible widgets at every moment.
+
+## Core Methods
+
+### Creating Subscriptions
+
+```rust
+pub fn none() -> Self
+```
+Returns an empty subscription that produces no output.
+
+```rust
+pub fn run<S>(builder: fn() -> S) -> Self
+where
+    S: Stream<Item = T> + MaybeSend + 'static,
+    T: 'static,
+```
+Creates a subscription that runs the given stream builder function.
+
+```rust
+pub fn run_with<D, S>(data: D, builder: fn(&D) -> S) -> Self
+where
+    D: Hash + 'static,
+    S: Stream<Item = T> + MaybeSend + 'static,
+    T: 'static,
+```
+Creates a subscription with data that becomes part of its identity.
+
+### Combining Subscriptions
+
+```rust
+pub fn batch(subscriptions: impl IntoIterator<Item = Subscription<T>>) -> Self
+```
+Batches all provided subscriptions into one.
+
+### Transforming Subscriptions
+
+```rust
+pub fn map<F, A>(self, f: F) -> Subscription<A>
+where
+    T: 'static,
+    F: Fn(T) -> A + MaybeSend + Clone + 'static,
+    A: 'static,
+```
+Transforms the subscription output with the given function.
+
+<Warning>
+  The closure provided to `map` must be a non-capturing closure. If you need to capture state, use `with` instead.
+</Warning>
+
+```rust
+pub fn filter_map<F, A>(self, f: F) -> Subscription<A>
+where
+    T: MaybeSend + 'static,
+    F: Fn(T) -> Option<A> + MaybeSend + Clone + 'static,
+    A: MaybeSend + 'static,
+```
+Transforms the subscription output, yielding values only when the function returns `Some(A)`.
+
+```rust
+pub fn with<A>(self, value: A) -> Subscription<(A, T)>
+where
+    T: 'static,
+    A: Hash + Clone + Send + Sync + 'static,
+```
+Adds a value to the subscription context. The value becomes part of the subscription's identity.
+
+## Recipe Trait
+
+```rust
+pub trait Recipe {
+    type Output;
+
+    fn hash(&self, state: &mut Hasher);
+    fn stream(self: Box<Self>, input: EventStream) -> BoxStream<Self::Output>;
+}
+```
+
+The internal definition of a subscription. Use this to create custom subscriptions.
+
+## Helper Functions
+
+```rust
+pub fn from_recipe<T>(recipe: impl Recipe<Output = T> + 'static) -> Subscription<T>
+```
+Creates a subscription from a custom recipe.
+
+```rust
+pub fn filter_map<I, F, T>(id: I, f: F) -> Subscription<T>
+where
+    I: Hash + 'static,
+    F: Fn(Event) -> Option<T> + MaybeSend + 'static,
+    T: 'static + MaybeSend,
+```
+Creates a subscription from a hashable ID and a filter function.
+
+## Examples
+
+### Subscribing to time
+
+```rust
+use iced::{Subscription, time};
+use std::time::Duration;
+
+fn subscription(state: &State) -> Subscription<Message> {
+    if state.timer_enabled {
+        time::every(Duration::from_secs(1))
+            .map(|_| Message::Tick)
+    } else {
+        Subscription::none()
+    }
+}
+```
+
+### Subscribing to window events
+
+```rust
+use iced::{Subscription, window};
+
+fn subscription(state: &State) -> Subscription<Message> {
+    window::resize_events()
+        .map(|(id, size)| Message::WindowResized { id, size })
+}
+```
+
+### Creating a bidirectional worker
+
+```rust
+use iced::futures::channel::mpsc;
+use iced::stream;
+
+pub enum Event {
+    Ready(mpsc::Sender<Input>),
+    WorkFinished,
+}
+
+enum Input {
+    DoSomeWork,
+}
+
+fn some_worker() -> impl Stream<Item = Event> {
+    stream::channel(100, async |mut output| {
+        let (sender, mut receiver) = mpsc::channel(100);
+        output.send(Event::Ready(sender)).await;
+
+        loop {
+            use iced::futures::StreamExt;
+            let input = receiver.select_next_some().await;
+
+            match input {
+                Input::DoSomeWork => {
+                    // Do async work...
+                    output.send(Event::WorkFinished).await;
+                }
+            }
+        }
+    })
+}
+
+fn subscription() -> Subscription<Event> {
+    Subscription::run(some_worker)
+}
+```
+
+### Batching subscriptions
+
+```rust
+fn subscription(state: &State) -> Subscription<Message> {
+    Subscription::batch([
+        time::every(Duration::from_secs(1))
+            .map(|_| Message::Tick),
+        keyboard::listen()
+            .map(Message::KeyPressed),
+        window::resize_events()
+            .map(|(id, size)| Message::WindowResized { id, size }),
+    ])
+}
+```
+
+## See Also
+
+- [Task](/api/runtime/task) - For one-off asynchronous actions
+- [Window Events](/api/runtime/window#subscriptions) - Window event subscriptions

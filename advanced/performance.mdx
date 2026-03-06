@@ -1,0 +1,566 @@
+---
+title: Performance Optimization
+description: Techniques and best practices for optimizing Iced application performance
+---
+
+This guide covers performance optimization techniques for Iced applications, from general best practices to renderer-specific optimizations.
+
+## Profiling Your Application
+
+### Debug Metrics (F12)
+
+Iced includes built-in performance metrics accessible by pressing **F12** during development:
+
+**Enable debug features:**
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["debug"] }
+```
+
+The debug overlay shows:
+- **Frame time** - Time to render each frame
+- **Update time** - Time spent in your update logic
+- **View time** - Time to build the widget tree
+- **Layout time** - Time to compute layouts
+- **Draw time** - Time to generate rendering primitives
+- **Layers rendered** - Number of rendering layers
+- **Messages logged** - Recent update messages
+
+### Time-Travel Debugging
+
+For message flow analysis:
+
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["time-travel"] }
+```
+
+This enables:
+- Message history tracking
+- State rewind/replay
+- Performance analysis per message
+
+### External Profilers
+
+For deeper analysis, use:
+
+**Tracy profiler integration:**
+```toml
+iced = { version = "0.15", features = ["tracy"] }
+```
+
+**Standard profiling:**
+```bash
+# With cargo-flamegraph
+cargo flamegraph --bin my_app
+
+# With perf (Linux)
+cargo build --release
+perf record --call-graph=dwarf ./target/release/my_app
+perf report
+```
+
+## Widget Tree Optimization
+
+### Avoid Rebuilding Views
+
+Only rebuild views when state changes:
+
+```rust
+struct State {
+    counter: i32,
+    // Separate state that doesn't affect all widgets
+    mouse_position: Point,
+}
+
+fn view(state: &State) -> Element<Message> {
+    // This rebuilds on EVERY state change
+    column![
+        text(format!("Counter: {}", state.counter)),
+        text(format!("Mouse: {:?}", state.mouse_position)),
+    ].into()
+}
+```
+
+**Better approach - use lazy widgets:**
+
+```rust
+use iced::widget::lazy;
+
+fn view(state: &State) -> Element<Message> {
+    column![
+        // Only rebuild when counter changes
+        lazy(state.counter, |&counter| {
+            text(format!("Counter: {}", counter))
+        }),
+        // Only rebuild when mouse moves
+        lazy(state.mouse_position, |&pos| {
+            text(format!("Mouse: {:?}", pos))
+        }),
+    ].into()
+}
+```
+
+### Use Efficient Containers
+
+**Lists and scrollables:**
+
+```rust
+use iced::widget::scrollable;
+
+// Bad: Creates all 10,000 items upfront
+fn view(items: &[Item]) -> Element<Message> {
+    scrollable(
+        column(items.iter().map(|item| view_item(item)))
+    ).into()
+}
+
+// Better: Consider virtualizing large lists
+// (Implement custom widget with viewport culling)
+```
+
+### Cache Expensive Computations
+
+```rust
+struct State {
+    data: Vec<f64>,
+    cached_result: Option<f64>,
+}
+
+impl State {
+    fn expensive_calculation(&mut self) -> f64 {
+        if let Some(result) = self.cached_result {
+            return result;
+        }
+        
+        let result = self.data.iter().sum::<f64>() / self.data.len() as f64;
+        self.cached_result = Some(result);
+        result
+    }
+    
+    fn update_data(&mut self, new_data: Vec<f64>) {
+        self.data = new_data;
+        self.cached_result = None; // Invalidate cache
+    }
+}
+```
+
+## Rendering Optimization
+
+### Choose the Right Renderer
+
+**wgpu (GPU):**
+- Best for complex animations
+- Hardware-accelerated
+- Better for large windows
+- Higher memory usage
+
+**tiny-skia (CPU):**
+- Better for simple interfaces
+- Lower memory footprint
+- More predictable performance
+- No GPU driver issues
+
+### Configure Present Mode
+
+Control frame rate with present modes:
+
+```bash
+# VSync (60 FPS on most displays)
+ICED_PRESENT_MODE=vsync cargo run
+
+# No VSync (unlimited FPS)
+ICED_PRESENT_MODE=no_vsync cargo run
+
+# Immediate (lowest latency)
+ICED_PRESENT_MODE=immediate cargo run
+
+# Mailbox (tear-free, low latency)
+ICED_PRESENT_MODE=mailbox cargo run
+```
+
+**In code:**
+```rust
+use iced::Settings;
+
+fn main() -> iced::Result {
+    MyApp::run(Settings {
+        antialiasing: Some(iced::Antialiasing::MSAAx4),
+        // ... other settings
+    })
+}
+```
+
+### Antialiasing Trade-offs
+
+```rust
+use iced::Antialiasing;
+
+// No antialiasing - fastest
+antialiasing: None
+
+// MSAAx2 - good balance
+antialiasing: Some(Antialiasing::MSAAx2)
+
+// MSAAx4 - recommended default
+antialiasing: Some(Antialiasing::MSAAx4)
+
+// MSAAx8/MSAAx16 - diminishing returns
+antialiasing: Some(Antialiasing::MSAAx16)
+```
+
+### Minimize Layer Count
+
+Layers add overhead:
+
+```rust
+// Each clip/scroll area creates a layer
+scrollable(
+    column![
+        // Each nested scrollable = another layer
+        scrollable(content1),
+        scrollable(content2), // Avoid if possible
+    ]
+)
+```
+
+Monitor with F12 debug overlay: "Layers Rendered"
+
+### Batch Drawing Operations
+
+The renderer automatically batches similar operations, but you can help:
+
+```rust
+// Good: Similar widgets grouped together
+column![
+    text("Line 1"),
+    text("Line 2"),
+    text("Line 3"),
+]
+
+// Less efficient: Interleaved widget types
+column![
+    text("Line 1"),
+    container(button("Button")),
+    text("Line 2"),
+    container(button("Button")),
+]
+```
+
+## Memory Optimization
+
+### Image Caching
+
+Images are automatically cached, but you can control it:
+
+```rust
+use iced::widget::image;
+use iced::widget::image::Handle;
+
+// Reuse handles for same image
+struct State {
+    logo: Handle,
+}
+
+impl State {
+    fn new() -> Self {
+        Self {
+            logo: Handle::from_path("logo.png"),
+        }
+    }
+}
+
+fn view(state: &State) -> Element<Message> {
+    // Reuse the handle - image loaded only once
+    image(&state.logo).into()
+}
+```
+
+### Font Loading
+
+Load fonts once at startup:
+
+```rust
+use iced::Font;
+
+const CUSTOM_FONT: Font = Font::with_name("My Custom Font");
+
+fn view(state: &State) -> Element<Message> {
+    text("Hello").font(CUSTOM_FONT).into()
+}
+```
+
+### Avoid Large Widget Trees
+
+```rust
+// Bad: Creates huge intermediate vector
+let items: Vec<Element<_>> = (0..10000)
+    .map(|i| text(i.to_string()).into())
+    .collect();
+let content = column(items);
+
+// Better: Use iterator directly
+let content = column(
+    (0..10000).map(|i| text(i.to_string()))
+);
+```
+
+## Message Handling
+
+### Batch Updates
+
+```rust
+enum Message {
+    ItemUpdated(usize, String),
+    BatchUpdate(Vec<(usize, String)>),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::ItemUpdated(idx, val) => {
+            state.items[idx] = val;
+            Task::none()
+        }
+        Message::BatchUpdate(updates) => {
+            // Single render for multiple updates
+            for (idx, val) in updates {
+                state.items[idx] = val;
+            }
+            Task::none()
+        }
+    }
+}
+```
+
+### Debounce Expensive Operations
+
+```rust
+use std::time::{Duration, Instant};
+
+struct State {
+    search_query: String,
+    last_search: Instant,
+    search_debounce: Duration,
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::SearchInput(query) => {
+            state.search_query = query;
+            
+            // Only search after debounce period
+            if state.last_search.elapsed() > state.search_debounce {
+                state.last_search = Instant::now();
+                Task::perform(
+                    search(state.search_query.clone()),
+                    Message::SearchResults
+                )
+            } else {
+                Task::none()
+            }
+        }
+    }
+}
+```
+
+## Async Operations
+
+### Use Efficient Executors
+
+```toml
+# Tokio - best for I/O heavy apps
+iced = { features = ["tokio"] }
+
+# Thread pool - good general purpose
+iced = { features = ["thread-pool"] }
+
+# Smol - lightweight alternative
+iced = { features = ["smol"] }
+```
+
+### Avoid Blocking the UI
+
+```rust
+use iced::Task;
+
+// Bad: Blocks UI thread
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::LoadData => {
+            let data = std::fs::read_to_string("data.json").unwrap();
+            state.data = data;
+            Task::none()
+        }
+    }
+}
+
+// Good: Async task
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::LoadData => {
+            Task::perform(
+                async { tokio::fs::read_to_string("data.json").await },
+                |result| Message::DataLoaded(result.unwrap())
+            )
+        }
+        Message::DataLoaded(data) => {
+            state.data = data;
+            Task::none()
+        }
+    }
+}
+```
+
+## Canvas Optimization
+
+For the Canvas widget:
+
+```rust
+use iced::widget::canvas::{self, Cache, Frame, Geometry};
+
+struct MyCanvas {
+    cache: Cache,
+}
+
+impl canvas::Program<Message> for MyCanvas {
+    fn draw(&self, state: &State, renderer: &Renderer, bounds: Size) -> Vec<Geometry> {
+        // Use cache for static content
+        let background = self.cache.draw(renderer, bounds, |frame| {
+            // Expensive drawing that rarely changes
+            draw_grid(frame);
+        });
+        
+        // Dynamic content drawn every frame
+        let mut frame = Frame::new(renderer, bounds);
+        draw_dynamic_elements(&mut frame, state);
+        
+        vec![background, frame.into_geometry()]
+    }
+}
+
+// Clear cache when needed
+fn update(canvas: &mut MyCanvas, message: Message) {
+    match message {
+        Message::GridSettingsChanged => {
+            canvas.cache.clear();
+        }
+    }
+}
+```
+
+## Build Optimization
+
+### Release Profile
+
+```toml
+[profile.release]
+opt-level = 3
+lto = "thin"         # or "fat" for maximum optimization
+codegen-units = 1    # slower compile, faster runtime
+panic = "abort"      # smaller binary
+strip = true         # remove debug symbols
+```
+
+### Feature Flags
+
+Only enable what you need:
+
+```toml
+[dependencies]
+iced = {
+    version = "0.15",
+    default-features = false,
+    features = [
+        "wgpu",           # or "tiny-skia"
+        "tokio",          # choose one executor
+        # "image",        # only if needed
+        # "svg",          # only if needed
+        # "canvas",       # only if needed
+    ]
+}
+```
+
+## Platform-Specific Optimization
+
+### Linux
+
+```bash
+# Use Wayland for better performance
+ICED_WAYLAND=1 cargo run
+
+# Choose Vulkan backend
+WGPU_BACKEND=vulkan cargo run
+```
+
+### Windows
+
+```bash
+# DirectX 12 (usually best)
+WGPU_BACKEND=dx12 cargo run
+
+# DirectX 11 (compatibility)
+WGPU_BACKEND=dx11 cargo run
+```
+
+### macOS
+
+```bash
+# Metal is the default and recommended
+WGPU_BACKEND=metal cargo run
+```
+
+## Monitoring Performance
+
+### Add Custom Metrics
+
+```rust
+use iced_debug as debug;
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    let span = debug::time("expensive_operation");
+    // ... expensive work ...
+    span.finish();
+    
+    Task::none()
+}
+```
+
+### System Information
+
+Monitor resource usage:
+
+```toml
+iced = { features = ["sysinfo"] }
+```
+
+## Common Performance Pitfalls
+
+1. **Rebuilding the entire widget tree on every update**
+   - Use `lazy` widgets
+   - Split state to minimize redraws
+
+2. **Excessive cloning in view functions**
+   - Pass references when possible
+   - Use `Arc` for shared data
+
+3. **Not caching expensive computations**
+   - Memoize results
+   - Use `lazy_static` or `OnceCell`
+
+4. **Too many subscriptions**
+   - Combine related subscriptions
+   - Unsubscribe when not needed
+
+5. **Large images without optimization**
+   - Resize images to display size
+   - Use appropriate formats (WebP, etc.)
+
+6. **Synchronous file I/O**
+   - Always use async for file operations
+   - Show loading states
+
+## Next Steps
+
+- Use [Debugging](/advanced/debugging) tools to identify bottlenecks
+- Review [Renderer Architecture](/advanced/renderers) for backend choices
+- Learn about [Custom Renderers](/advanced/custom-renderers) for specialized needs

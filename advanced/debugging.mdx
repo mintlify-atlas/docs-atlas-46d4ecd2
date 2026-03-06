@@ -1,0 +1,495 @@
+---
+title: Debugging
+description: Tools and techniques for debugging Iced applications
+---
+
+Iced provides powerful debugging tools to help you understand and optimize your applications. This guide covers the built-in debugging features and techniques.
+
+## Debug Overlay (F12)
+
+The most immediate debugging tool is the built-in debug overlay.
+
+### Enabling Debug Features
+
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["debug"] }
+```
+
+### Using the Debug Overlay
+
+1. Run your application in debug mode
+2. Press **F12** to toggle the debug overlay
+3. View real-time performance metrics
+
+**Metrics displayed:**
+- **Frame time** - Total time per frame (aim for < 16.67ms for 60 FPS)
+- **Update** - Time in your `update()` function
+- **View** - Time building the widget tree
+- **Layout** - Time computing widget positions and sizes
+- **Draw** - Time generating rendering primitives
+- **Prepare** - Time preparing GPU/CPU resources
+- **Render** - Time submitting draw calls
+- **Present** - Time presenting to screen
+- **Layers** - Number of rendering layers (fewer is better)
+- **Messages** - Recent messages processed
+
+### Interpreting Metrics
+
+**High Update time:**
+- Your business logic is too expensive
+- Consider async processing
+- Check for expensive cloning or allocations
+
+**High View time:**
+- Widget tree is too large
+- Use `lazy` widgets to reduce rebuilds
+- Profile view function with external tools
+
+**High Layout time:**
+- Too many complex layouts
+- Simplify container nesting
+- Avoid dynamic sizing when possible
+
+**High Draw time:**
+- Too many primitives being generated
+- Check for widget duplication
+- Reduce number of draw calls
+
+**Many Layers:**
+- Reduce nested scrollables
+- Limit clipping operations
+- Each layer has overhead
+
+## Time-Travel Debugging
+
+Time-travel debugging lets you rewind and replay your application state.
+
+### Enabling Time Travel
+
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["time-travel"] }
+```
+
+**Note:** This is experimental and adds overhead. Only use during development.
+
+### Using Time Travel
+
+1. Run your app with time-travel enabled
+2. Press **F12** to open the debug overlay
+3. The Comet debugger will launch (auto-installed on first use)
+4. See message history and rewind to any point
+
+**Features:**
+- View all messages in chronological order
+- Click any message to rewind to that state
+- See message payloads and timing
+- Replay message sequences
+
+### Requirements
+
+Your `Message` type must implement `Debug` and optionally `Clone`:
+
+```rust
+#[derive(Debug, Clone)]
+enum Message {
+    ButtonPressed,
+    ValueChanged(i32),
+    // ...
+}
+```
+
+Your `State` must be deterministic (no randomness or timestamps in update).
+
+## Comet Debugger
+
+Comet is Iced's official companion debugger tool.
+
+### Features
+
+- **Performance metrics** - Real-time charts and graphs
+- **Message timeline** - Visual message flow
+- **State inspection** - View application state
+- **Theme preview** - See current theme palette
+- **Command tracking** - Monitor async tasks
+- **Subscription monitoring** - See active subscriptions
+
+### Installation
+
+Comet is automatically installed when you first press F12 with debug features enabled.
+
+**Manual installation:**
+```bash
+cargo install --locked \
+  --git https://github.com/iced-rs/comet.git \
+  --rev [compatible-revision]
+```
+
+### Connecting to Comet
+
+Comet connects to your app via a local socket. Press **F12** in your running application to establish the connection.
+
+## Hot Reloading
+
+Hot reloading allows you to see code changes without restarting your app.
+
+### Enabling Hot Reloading
+
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["hot"] }
+```
+
+### Using Hot Reloading
+
+Wrap hot-reloadable code with `debug::hot`:
+
+```rust
+use iced::debug;
+
+fn view(state: &State) -> Element<Message> {
+    debug::hot(|| {
+        column![
+            text("This view can be hot-reloaded"),
+            button("Click me").on_press(Message::ButtonPressed),
+        ].into()
+    })
+}
+```
+
+**Run with hot reloading:**
+```bash
+cargo watch -x run
+```
+
+Changes to code inside `debug::hot` will be applied without restart.
+
+**Limitations:**
+- Only works with code inside `debug::hot` blocks
+- Cannot change function signatures
+- Cannot add/remove fields from structs
+- State is not preserved across hot patches
+
+### Detecting Stale Code
+
+Check if types have changed:
+
+```rust
+if debug::is_stale() {
+    // Types have changed, recommend restart
+    show_restart_notification();
+}
+```
+
+### On Hotpatch Callbacks
+
+Run code when a hotpatch occurs:
+
+```rust
+debug::on_hotpatch(|| {
+    println!("Code was hot-reloaded!");
+    // Reinitialize resources if needed
+});
+```
+
+## Custom Debug Spans
+
+Instrument your code with custom timing spans:
+
+```rust
+use iced_debug as debug;
+
+fn expensive_operation() {
+    let span = debug::time("expensive_operation");
+    
+    // Your expensive code here
+    
+    span.finish();
+}
+
+// Or use the helper:
+debug::time_with("calculation", || {
+    // Expensive calculation
+});
+```
+
+These spans appear in the Comet debugger timeline.
+
+## Logging
+
+Use Rust's standard logging infrastructure:
+
+```rust
+use log::{debug, info, warn, error};
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    debug!("Processing message: {:?}", message);
+    
+    match message {
+        Message::Error(e) => {
+            error!("An error occurred: {}", e);
+        }
+        _ => {}
+    }
+    
+    Task::none()
+}
+```
+
+**Initialize logger:**
+```rust
+fn main() -> iced::Result {
+    env_logger::init();
+    
+    MyApp::run(Settings::default())
+}
+```
+
+**Run with logging:**
+```bash
+RUST_LOG=debug cargo run
+RUST_LOG=my_app=trace cargo run
+```
+
+## Testing
+
+Iced provides a testing framework for automated tests.
+
+### Enabling the Tester
+
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["tester"] }
+```
+
+### Recording Tests
+
+1. Press **F12** in your running app
+2. Perform actions you want to test
+3. Test interactions are recorded
+4. Export as test code
+
+### Running Tests
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iced::test::{self, TestState};
+
+    #[test]
+    fn test_button_click() {
+        let mut state = TestState::new();
+        
+        // Simulate button click
+        state.click_button("my-button");
+        
+        // Assert expected state
+        assert_eq!(state.counter, 1);
+    }
+}
+```
+
+## Headless Testing
+
+Test rendering without a display:
+
+```rust
+use iced::{Renderer, Settings};
+use iced::Size;
+
+#[tokio::test]
+async fn test_render() {
+    let renderer = Renderer::new(
+        Font::default(),
+        Pixels(16.0),
+        Some("wgpu")
+    ).await.unwrap();
+    
+    // Render your view
+    let screenshot = renderer.screenshot(
+        Size::new(800, 600),
+        1.0,
+        Color::WHITE
+    );
+    
+    // Assert on pixel data
+    assert!(!screenshot.is_empty());
+}
+```
+
+## Environment Variables
+
+### Debug Control
+
+```bash
+# Enable debug output
+ICED_DEBUG=1 cargo run
+
+# Choose backend
+ICED_BACKEND=wgpu cargo run
+ICED_BACKEND=tiny-skia cargo run
+
+# Control present mode
+ICED_PRESENT_MODE=immediate cargo run
+```
+
+### Renderer Debugging
+
+```bash
+# wgpu-specific
+WGPU_BACKEND=vulkan cargo run
+WGPU_POWER_PREF=high cargo run  # or 'low'
+
+# Validation (useful for GPU debugging)
+RUST_LOG=wgpu=debug cargo run
+
+# Capture GPU traces
+WGPU_TRACE=./trace cargo run
+```
+
+### Platform-Specific
+
+```bash
+# Linux - Force Wayland
+ICED_WAYLAND=1 cargo run
+
+# Linux - Force X11
+ICED_X11=1 cargo run
+
+# Disable VSync
+ICED_PRESENT_MODE=no_vsync cargo run
+```
+
+## Performance Profiling
+
+### Tracy Integration
+
+For advanced profiling:
+
+```toml
+iced = { features = ["tracy"] }
+```
+
+Then run Tracy profiler and connect to your app.
+
+### Flamegraphs
+
+```bash
+cargo install flamegraph
+cargo flamegraph --bin my_app
+```
+
+### System Monitoring
+
+```toml
+iced = { features = ["sysinfo"] }
+```
+
+Access system information in your app:
+
+```rust
+use iced::sysinfo;
+
+fn view(state: &State) -> Element<Message> {
+    let memory = sysinfo::memory_usage();
+    text(format!("Memory: {:.2} MB", memory)).into()
+}
+```
+
+## Common Issues
+
+### Application Freezes
+
+**Symptoms:** UI becomes unresponsive
+
+**Debug steps:**
+1. Check F12 overlay for long Update times
+2. Look for blocking I/O in update function
+3. Search for infinite loops or recursion
+4. Profile with external tools
+
+**Solution:** Move expensive work to async tasks
+
+### Slow Rendering
+
+**Symptoms:** Low FPS, stuttering
+
+**Debug steps:**
+1. Check Draw/Render times in F12
+2. Count layers (high = problem)
+3. Profile View function
+4. Check for massive widget trees
+
+**Solution:** Optimize view, use lazy widgets, reduce layers
+
+### Memory Leaks
+
+**Symptoms:** Memory usage grows over time
+
+**Debug steps:**
+1. Use memory profilers (heaptrack, valgrind)
+2. Check for growing caches
+3. Look for unreleased resources
+4. Verify Task completion
+
+**Solution:** Implement proper cleanup in tick()
+
+### Graphics Issues
+
+**Symptoms:** Visual glitches, crashes
+
+**Debug steps:**
+1. Try different backends: `WGPU_BACKEND=vulkan`
+2. Update graphics drivers
+3. Check for GPU errors: `RUST_LOG=wgpu=debug`
+4. Test with tiny-skia renderer
+
+**Solution:** Report backend-specific issues
+
+## Debug Assertions
+
+Enable strict assertions during development:
+
+```toml
+iced = { features = ["strict-assertions"] }
+```
+
+This catches common mistakes early but impacts performance.
+
+## Conditional Rendering
+
+Add debug-only widgets:
+
+```rust
+fn view(state: &State) -> Element<Message> {
+    let mut content = column![
+        // Your normal UI
+    ];
+    
+    if cfg!(debug_assertions) {
+        content = content.push(
+            text(format!("Debug: counter = {}", state.counter))
+        );
+    }
+    
+    content.into()
+}
+```
+
+## Tips
+
+1. **Always use the F12 overlay first** - It shows 90% of issues
+2. **Enable debug features only in dev** - They add overhead
+3. **Use time-travel for message flow issues** - Invaluable for complex flows
+4. **Profile with external tools for deep issues** - flamegraph, perf, Tracy
+5. **Test with both renderers** - Helps isolate GPU vs logic issues
+6. **Use logging liberally** - Easy to add, easy to filter
+7. **Write tests early** - Catch regressions fast
+
+## Next Steps
+
+- Review [Performance](/advanced/performance) optimization techniques
+- Understand the [Renderer Architecture](/advanced/renderers)
+- Create [Custom Renderers](/advanced/custom-renderers) with debug support

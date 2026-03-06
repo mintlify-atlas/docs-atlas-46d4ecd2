@@ -1,0 +1,95 @@
+---
+title: Application Overview
+description: Create and run iced applications step by step
+---
+
+The Application API provides a flexible, builder-based approach to creating iced GUI applications without coupling your logic to a trait or specific type.
+
+## Quick Start
+
+The simplest way to create an iced application:
+
+```rust
+use iced::widget::{button, column, text};
+
+pub fn main() -> iced::Result {
+    iced::run(update, view)
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Increment,
+}
+
+fn update(value: &mut u64, message: Message) {
+    match message {
+        Message::Increment => *value += 1,
+    }
+}
+
+fn view(value: &u64) -> iced::Element<Message> {
+    column![
+        text(value),
+        button("+").on_press(Message::Increment),
+    ]
+    .into()
+}
+```
+
+## Application Builder
+
+For more control, use the `application()` builder:
+
+```rust
+use iced::widget::{button, column, text};
+use iced::Theme;
+
+pub fn main() -> iced::Result {
+    iced::application(u64::default, update, view)
+        .theme(Theme::Dark)
+        .centered()
+        .run()
+}
+```
+
+The builder pattern allows you to configure:
+
+- **Window settings** - Size, position, decorations
+- **Theme** - Built-in or custom themes
+- **Fonts** - Custom font loading
+- **Subscriptions** - Listen to events
+- **Settings** - Antialiasing, vsync, and more
+
+See the [run](/api/application/run) and [settings](/api/application/settings) pages for detailed configuration options.
+
+## Core Concepts
+
+### State
+
+Your application state can be any type that implements `Default` (for `iced::run`) or any type with a custom initialization function (for `iced::application`).
+
+### Update Function
+
+The update function receives mutable state and a message, optionally returning a `Task`:
+
+```rust
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    // Handle message and update state
+    Task::none()
+}
+```
+
+### View Function
+
+The view function produces the UI from immutable state:
+
+```rust
+fn view(state: &State) -> Element<Message> {
+    // Build and return your UI
+}
+```
+
+## Related APIs
+
+- [iced::run](/api/application/run) - Run an application with default settings
+- [Settings](/api/application/settings) - Configure application settings

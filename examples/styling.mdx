@@ -1,0 +1,446 @@
+---
+title: 'Styling Example'
+description: 'Learn how to apply themes and custom styles to Iced widgets'
+---
+
+# Styling Example
+
+The styling example showcases Iced's theming system, demonstrating how to apply built-in themes and create custom styles for all available widgets.
+
+## Features
+
+- Theme picker with all built-in themes
+- Keyboard shortcuts for theme navigation
+- Examples of every widget style
+- Light and dark theme support
+- Custom styled components
+- Bordered containers and cards
+
+## Running the Example
+
+```bash
+cargo run --package styling
+```
+
+## Application Structure
+
+### State
+
+```rust
+#[derive(Default)]
+struct Styling {
+    theme: Option<Theme>,
+    input_value: String,
+    slider_value: f32,
+    checkbox_value: bool,
+    toggler_value: bool,
+}
+```
+
+The state tracks:
+- Current theme (None means system default)
+- Widget values for demonstration
+
+### Messages
+
+```rust
+#[derive(Debug, Clone)]
+enum Message {
+    ThemeChanged(Theme),
+    InputChanged(String),
+    ButtonPressed,
+    SliderChanged(f32),
+    CheckboxToggled(bool),
+    TogglerToggled(bool),
+    PreviousTheme,
+    NextTheme,
+    ClearTheme,
+}
+```
+
+## Theme System
+
+### Selecting Themes
+
+```rust
+fn theme(&self) -> Option<Theme> {
+    self.theme.clone()
+}
+```
+
+Implementing the `theme` method allows dynamic theme switching.
+
+### Built-in Themes
+
+Iced includes several built-in themes accessible via `Theme::ALL`:
+
+```rust
+let choose_theme = column![
+    text("Theme:"),
+    pick_list(self.theme.as_ref(), Theme::ALL, Theme::to_string)
+        .on_select(Message::ThemeChanged)
+        .width(Fill)
+        .placeholder("System"),
+]
+.spacing(10);
+```
+
+Available themes:
+- Default
+- Dark
+- Light
+- Dracula
+- Nord
+- Solarized Light
+- Solarized Dark
+- Gruvbox Light
+- Gruvbox Dark
+- Catppuccin Latte
+- Catppuccin Frappé
+- Catppuccin Macchiato
+- Catppuccin Mocha
+- Tokyo Night
+- Tokyo Night Storm
+- Tokyo Night Light
+- Kanagawa Wave
+- Kanagawa Dragon
+- Kanagawa Lotus
+- Moonfly
+- Nightfly
+- Oxocarbon
+- Ferra (and many more)
+
+### Theme Navigation
+
+```rust
+Message::PreviousTheme | Message::NextTheme => {
+    let current = Theme::ALL
+        .iter()
+        .position(|candidate| self.theme.as_ref() == Some(candidate));
+    
+    self.theme = Some(if matches!(message, Message::NextTheme) {
+        Theme::ALL[current.map(|current| current + 1).unwrap_or(0) % Theme::ALL.len()]
+            .clone()
+    } else {
+        let current = current.unwrap_or(0);
+        
+        if current == 0 {
+            Theme::ALL
+                .last()
+                .expect("Theme::ALL must not be empty")
+                .clone()
+        } else {
+            Theme::ALL[current - 1].clone()
+        }
+    });
+}
+```
+
+## Button Styles
+
+```rust
+let styles = [
+    ("Primary", button::primary as fn(&Theme, _) -> _),
+    ("Secondary", button::secondary),
+    ("Success", button::success),
+    ("Warning", button::warning),
+    ("Danger", button::danger),
+];
+
+let styled_button = |label| button(text(label).width(Fill).center()).padding(10);
+
+column![
+    row(styles.into_iter().map(|(name, style)| styled_button(name)
+        .on_press(Message::ButtonPressed)
+        .style(style)
+        .into()))
+    .spacing(10)
+    .align_y(Center),
+    row(styles
+        .into_iter()
+        .map(|(name, style)| styled_button(name).style(style).into()))
+    .spacing(10)
+    .align_y(Center),
+]
+.spacing(10)
+```
+
+Demonstrates:
+- **Primary**: Main actions
+- **Secondary**: Secondary actions
+- **Success**: Positive actions
+- **Warning**: Cautionary actions
+- **Danger**: Destructive actions
+- **Disabled state**: Buttons without `on_press`
+
+## Text Input
+
+```rust
+let text_input = text_input("Type something...", &self.input_value)
+    .on_input(Message::InputChanged)
+    .padding(10)
+    .size(20);
+```
+
+Text inputs automatically adapt to the theme.
+
+## Slider & Progress Bar
+
+```rust
+let slider = || slider(0.0..=100.0, self.slider_value, Message::SliderChanged);
+
+let progress_bar = || progress_bar(0.0..=100.0, self.slider_value);
+```
+
+Linked slider and progress bar show the same value with themed styling.
+
+## Checkboxes & Togglers
+
+```rust
+let check = checkbox(self.checkbox_value)
+    .label("Check me!")
+    .on_toggle(Message::CheckboxToggled);
+
+let check_disabled = checkbox(self.checkbox_value).label("Disabled");
+
+let toggle = toggler(self.toggler_value)
+    .label("Toggle me!")
+    .on_toggle(Message::TogglerToggled);
+
+let disabled_toggle = toggler(self.toggler_value).label("Disabled");
+```
+
+Shows active and disabled states for both widgets.
+
+## Scrollable Content
+
+```rust
+let scroll_me = scrollable(column!["Scroll me!", space().height(800), "You did it!"])
+    .width(Fill)
+    .height(Fill)
+    .auto_scroll(true);
+```
+
+Scrollbars automatically match the theme.
+
+## Container Styles
+
+```rust
+let card = {
+    container(column![
+        text("Card Example").size(24),
+        slider(),
+        progress_bar(),
+    ]
+    .spacing(20))
+        .width(Fill)
+        .padding(20)
+        .style(container::bordered_box)
+};
+```
+
+The `container::bordered_box` style creates a themed card with borders.
+
+## Rules (Dividers)
+
+```rust
+rule::horizontal(1)  // Horizontal divider
+rule::vertical(1)    // Vertical divider
+```
+
+Rules adapt their color to the theme.
+
+## Keyboard Shortcuts
+
+```rust
+fn subscription(&self) -> Subscription<Message> {
+    keyboard::listen().filter_map(|event| {
+        let keyboard::Event::KeyPressed {
+            modified_key: keyboard::Key::Named(modified_key),
+            repeat: false,
+            ..
+        } = event
+        else {
+            return None;
+        };
+        
+        match modified_key {
+            keyboard::key::Named::ArrowUp | keyboard::key::Named::ArrowLeft => {
+                Some(Message::PreviousTheme)
+            }
+            keyboard::key::Named::ArrowDown | keyboard::key::Named::ArrowRight => {
+                Some(Message::NextTheme)
+            }
+            keyboard::key::Named::Space => Some(Message::ClearTheme),
+            _ => None,
+        }
+    })
+}
+```
+
+Shortcuts:
+- **↑ / ←**: Previous theme
+- **↓ / →**: Next theme
+- **Space**: Clear theme (use system default)
+
+## Complete View
+
+```rust
+fn view(&self) -> Element<'_, Message> {
+    let content = column![
+        choose_theme,
+        rule::horizontal(1),
+        text_input,
+        buttons,
+        slider(),
+        progress_bar(),
+        row![
+            scroll_me,
+            rule::vertical(1),
+            column![check, check_disabled, toggle, disabled_toggle].spacing(10),
+        ]
+        .spacing(10)
+        .height(Shrink)
+        .align_y(Center),
+        card
+    ]
+    .spacing(20)
+    .padding(20)
+    .max_width(600);
+    
+    center_y(scrollable(center_x(content)).spacing(10))
+        .padding(10)
+        .into()
+}
+```
+
+## Custom Styles
+
+While this example uses built-in styles, you can create custom styles:
+
+```rust
+use iced::widget::button;
+use iced::{Background, Color, Theme};
+
+fn custom_button(theme: &Theme, status: button::Status) -> button::Style {
+    let palette = theme.extended_palette();
+    
+    match status {
+        button::Status::Active => button::Style {
+            background: Some(Background::Color(Color::from_rgb(0.2, 0.5, 0.8))),
+            text_color: Color::WHITE,
+            border: Border::rounded(4),
+            ..Default::default()
+        },
+        button::Status::Hovered => button::Style {
+            background: Some(Background::Color(Color::from_rgb(0.3, 0.6, 0.9))),
+            text_color: Color::WHITE,
+            border: Border::rounded(4),
+            ..Default::default()
+        },
+        _ => button::primary(theme, status),
+    }
+}
+
+// Use the custom style
+button("Custom").style(custom_button)
+```
+
+## Testing
+
+The example includes snapshot tests for all themes:
+
+```rust
+#[test]
+#[ignore]
+fn it_showcases_every_theme() -> Result<(), Error> {
+    Theme::ALL
+        .par_iter()
+        .cloned()
+        .map(|theme| {
+            let mut styling = Styling::default();
+            styling.update(Message::ThemeChanged(theme.clone()));
+            
+            let mut ui = simulator(styling.view());
+            let snapshot = ui.snapshot(&theme)?;
+            
+            assert!(
+                snapshot.matches_hash(format!(
+                    "snapshots/{theme}",
+                    theme = theme.to_string().to_ascii_lowercase().replace(" ", "_")
+                ))?,
+                "snapshots for {theme} should match!"
+            );
+            
+            Ok(())
+        })
+        .collect()
+}
+```
+
+This ensures all themes render correctly.
+
+## Key Concepts
+
+### Theme Type
+
+The `Theme` type is central to styling:
+
+```rust
+pub trait Application {
+    type Theme: Default + StyleSheet;
+    
+    fn theme(&self) -> Self::Theme {
+        Self::Theme::default()
+    }
+}
+```
+
+### Style Functions
+
+Style functions take `&Theme` and `Status` to produce styles:
+
+```rust
+type Fn<'a> = fn(&'a Theme, Status) -> Style;
+```
+
+### Extended Palette
+
+Access fine-grained colors:
+
+```rust
+let palette = theme.extended_palette();
+let background = palette.background.base.color;
+let text = palette.background.base.text;
+```
+
+## Best Practices
+
+1. **Use built-in themes** when possible
+2. **Provide theme picker** for user preference
+3. **Test with multiple themes** to ensure consistency
+4. **Use semantic colors** from extended palette
+5. **Support system theme** as default
+6. **Make custom styles** theme-aware
+7. **Test disabled states** for all interactive widgets
+
+## Related Examples
+
+- [Counter](/examples/counter) - Basic styling
+- [Todos](/examples/todo) - Custom text styles
+- [Custom Widget](/examples/custom-widget) - Custom widget styling
+
+## Source Code
+
+View the complete example on GitHub:
+- [styling/src/main.rs](https://github.com/iced-rs/iced/blob/master/examples/styling/src/main.rs)
+- [styling/Cargo.toml](https://github.com/iced-rs/iced/blob/master/examples/styling/Cargo.toml)
+
+## Next Steps
+
+- Create your own theme
+- Implement dark mode toggle
+- Build a theme editor
+- Add custom widget styles
+- Explore color palettes
+- Implement style presets

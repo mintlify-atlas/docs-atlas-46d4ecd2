@@ -1,0 +1,310 @@
+---
+title: 'Slider'
+description: 'A horizontal slider for selecting values from a range'
+---
+
+## Overview
+
+A `Slider` is a horizontal bar with a handle that allows users to select a single value from a range of values. The slider is generic over the numeric type (`f32`, `i32`, etc.) and supports custom step sizes.
+
+## Constructor
+
+### `slider::Slider::new`
+
+```rust
+pub fn new<F>(
+    range: RangeInclusive<T>,
+    value: T,
+    on_change: F
+) -> Self
+where
+    F: 'a + Fn(T) -> Message
+```
+
+Creates a new `Slider`.
+
+**Parameters:**
+- `range` - An inclusive range of possible values (e.g., `0.0..=100.0`)
+- `value` - The current value of the slider
+- `on_change` - Function called when the slider is dragged, receives the new value
+
+**Default height:** 16.0 pixels  
+**Default step:** 1 unit
+
+## Builder Methods
+
+### Value Control
+
+#### `default`
+
+```rust
+pub fn default(self, default: impl Into<T>) -> Self
+```
+
+Sets an optional default value. When set, Ctrl+Click or Cmd+Click will reset to this value.
+
+#### `step`
+
+```rust
+pub fn step(self, step: impl Into<T>) -> Self
+```
+
+Sets the step size of the slider. Default is 1.
+
+#### `shift_step`
+
+```rust
+pub fn shift_step(self, shift_step: impl Into<T>) -> Self
+```
+
+Sets an optional "shift" step used when the Shift key is pressed.
+
+### Event Handlers
+
+#### `on_release`
+
+```rust
+pub fn on_release(self, on_release: Message) -> Self
+```
+
+Sets the message produced when the mouse is released from the slider. Useful for triggering expensive operations only after the user finishes adjusting.
+
+### Layout
+
+#### `width`
+
+```rust
+pub fn width(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width of the slider. Default is `Length::Fill`.
+
+#### `height`
+
+```rust
+pub fn height(self, height: impl Into<Pixels>) -> Self
+```
+
+Sets the height of the slider.
+
+### Appearance
+
+#### `style`
+
+```rust
+pub fn style(self, style: impl Fn(&Theme, Status) -> Style + 'a) -> Self
+```
+
+Sets a custom style function.
+
+## Status
+
+```rust
+pub enum Status {
+    Active,   // The slider can be interacted with
+    Hovered,  // The slider is being hovered
+    Dragged,  // The slider is being dragged
+}
+```
+
+## Style
+
+```rust
+pub struct Style {
+    pub rail: Rail,
+    pub handle: Handle,
+}
+
+pub struct Rail {
+    pub backgrounds: (Background, Background), // (filled, empty)
+    pub width: f32,
+    pub border: Border,
+}
+
+pub struct Handle {
+    pub shape: HandleShape,
+    pub background: Background,
+    pub border_width: f32,
+    pub border_color: Color,
+}
+
+pub enum HandleShape {
+    Circle { radius: f32 },
+    Rectangle { width: u16, border_radius: border::Radius },
+}
+```
+
+### Style Helpers
+
+#### `with_circular_handle`
+
+```rust
+impl Style {
+    pub fn with_circular_handle(self, radius: impl Into<Pixels>) -> Self
+}
+```
+
+Changes the handle shape to a circle with the given radius.
+
+## Examples
+
+### Basic Slider
+
+```rust
+use iced::widget::slider;
+
+struct State {
+   value: f32,
+}
+
+enum Message {
+    ValueChanged(f32),
+}
+
+fn view(state: &State) -> Element<'_, Message> {
+    slider(0.0..=100.0, state.value, Message::ValueChanged)
+        .into()
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::ValueChanged(value) => {
+            state.value = value;
+        }
+    }
+}
+```
+
+### With Custom Step
+
+```rust
+slider(0.0..=1.0, state.opacity, Message::OpacityChanged)
+    .step(0.1)  // Snap to 0.1 increments
+```
+
+### With Shift Step
+
+```rust
+slider(0.0..=100.0, state.value, Message::ValueChanged)
+    .step(1.0)         // Normal step
+    .shift_step(10.0)  // Larger step when Shift is held
+```
+
+### With Default Value
+
+```rust
+// Ctrl+Click or Cmd+Click will reset to 50.0
+slider(0.0..=100.0, state.value, Message::ValueChanged)
+    .default(50.0)
+```
+
+### With Release Handler
+
+```rust
+slider(0.0..=100.0, state.volume, Message::VolumeChanged)
+    .on_release(Message::VolumeSaved)
+```
+
+### Integer Slider
+
+```rust
+slider(0..=10, state.count, Message::CountChanged)
+    .width(Length::Fill)
+```
+
+### Custom Width and Height
+
+```rust
+slider(0.0..=100.0, state.value, Message::ValueChanged)
+    .width(300)
+    .height(20)
+```
+
+### Custom Style
+
+```rust
+slider(0.0..=100.0, state.value, Message::ValueChanged)
+    .style(|theme, status| {
+        let palette = theme.extended_palette();
+        
+        let color = match status {
+            slider::Status::Active => Color::from_rgb(0.0, 0.5, 1.0),
+            slider::Status::Hovered => Color::from_rgb(0.0, 0.6, 1.0),
+            slider::Status::Dragged => Color::from_rgb(0.0, 0.4, 0.9),
+        };
+        
+        slider::Style {
+            rail: slider::Rail {
+                backgrounds: (
+                    color.into(),
+                    Color::from_rgb(0.8, 0.8, 0.8).into(),
+                ),
+                width: 6.0,
+                border: Border {
+                    radius: 3.0.into(),
+                    width: 0.0,
+                    color: Color::TRANSPARENT,
+                },
+            },
+            handle: slider::Handle {
+                shape: slider::HandleShape::Circle { radius: 10.0 },
+                background: color.into(),
+                border_color: Color::WHITE,
+                border_width: 2.0,
+            },
+        }
+    })
+```
+
+### Volume Control Example
+
+```rust
+use iced::widget::{column, slider, text, row};
+
+column![
+    row![
+        text("🔊"),
+        text(format!("{}%", (state.volume * 100.0) as i32)),
+    ]
+    .spacing(10),
+    
+    slider(0.0..=1.0, state.volume, Message::VolumeChanged)
+        .step(0.01)
+        .width(Length::Fill),
+]
+.spacing(10)
+```
+
+## Interaction
+
+The slider supports multiple interaction methods:
+
+- **Click** - Jump to clicked position
+- **Drag** - Drag the handle
+- **Arrow keys** - Fine adjustment (when hovering)
+- **Ctrl+Scroll / Cmd+Scroll** - Adjust value with mouse wheel
+- **Shift** - Use alternative step size
+- **Ctrl+Click / Cmd+Click** - Reset to default value (if set)
+
+## Numeric Types
+
+The slider works with any numeric type that implements:
+- `Copy`
+- `From<u8>`
+- `PartialOrd`
+- `Into<f64>`
+- `num_traits::FromPrimitive`
+
+Common types: `f32`, `f64`, `i32`, `i64`, `u32`, `u64`
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Text Input" href="/api/widget/text-input">
+    For precise numeric entry
+  </Card>
+  
+  <Card title="Button" href="/api/widget/button">
+    For discrete choices
+  </Card>
+</CardGroup>

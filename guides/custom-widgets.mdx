@@ -1,0 +1,520 @@
+---
+title: Custom Widgets
+description: Create your own widgets by implementing the Widget trait
+---
+
+While Iced provides many built-in widgets, you can create your own custom widgets by implementing the `Widget` trait.
+
+## The Widget Trait
+
+The `Widget` trait is the core abstraction for creating interactive components:
+
+```rust
+use iced::advanced::widget::Widget;
+use iced::advanced::layout::{self, Layout};
+use iced::advanced::renderer;
+use iced::mouse;
+use iced::{Element, Length, Rectangle, Size};
+
+pub trait Widget<Message, Theme, Renderer>
+where
+    Renderer: renderer::Renderer,
+{
+    fn size(&self) -> Size<Length>;
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node;
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    );
+    // ... more methods
+}
+```
+
+## Simple Custom Widget Example
+
+Here's a complete example of a simple circle widget:
+
+```rust
+use iced::advanced::layout::{self, Layout};
+use iced::advanced::renderer;
+use iced::advanced::widget::{self, Widget};
+use iced::border;
+use iced::mouse;
+use iced::{Color, Element, Length, Rectangle, Size};
+
+pub struct Circle {
+    radius: f32,
+}
+
+impl Circle {
+    pub fn new(radius: f32) -> Self {
+        Self { radius }
+    }
+}
+
+// Convenience function
+pub fn circle(radius: f32) -> Circle {
+    Circle::new(radius)
+}
+
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Circle
+where
+    Renderer: renderer::Renderer,
+{
+    fn size(&self) -> Size<Length> {
+        Size {
+            width: Length::Shrink,
+            height: Length::Shrink,
+        }
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut widget::Tree,
+        _renderer: &Renderer,
+        _limits: &layout::Limits,
+    ) -> layout::Node {
+        layout::Node::new(
+            Size::new(self.radius * 2.0, self.radius * 2.0)
+        )
+    }
+
+    fn draw(
+        &self,
+        _tree: &widget::Tree,
+        renderer: &mut Renderer,
+        _theme: &Theme,
+        _style: &renderer::Style,
+        layout: Layout<'_>,
+        _cursor: mouse::Cursor,
+        _viewport: &Rectangle,
+    ) {
+        renderer.fill_quad(
+            renderer::Quad {
+                bounds: layout.bounds(),
+                border: border::rounded(self.radius),
+                ..renderer::Quad::default()
+            },
+            Color::BLACK,
+        );
+    }
+}
+
+// Convert to Element
+impl<Message, Theme, Renderer> From<Circle>
+    for Element<'_, Message, Theme, Renderer>
+where
+    Renderer: renderer::Renderer,
+{
+    fn from(circle: Circle) -> Self {
+        Self::new(circle)
+    }
+}
+```
+
+## Using Your Custom Widget
+
+```rust
+use circle::circle;
+use iced::widget::{center, column, slider, text};
+use iced::{Center, Element};
+
+pub fn main() -> iced::Result {
+    iced::run(Example::update, Example::view)
+}
+
+struct Example {
+    radius: f32,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    RadiusChanged(f32),
+}
+
+impl Example {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::RadiusChanged(radius) => {
+                self.radius = radius;
+            }
+        }
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        let content = column![
+            circle(self.radius),
+            text!("Radius: {:.2}", self.radius),
+            slider(1.0..=100.0, self.radius, Message::RadiusChanged)
+                .step(0.01),
+        ]
+        .padding(20)
+        .spacing(20)
+        .max_width(500)
+        .align_x(Center);
+
+        center(content).into()
+    }
+}
+
+impl Default for Example {
+    fn default() -> Self {
+        Self { radius: 50.0 }
+    }
+}
+```
+
+## Widget Trait Methods
+
+### Required Methods
+
+#### size
+
+Returns the size constraints of the widget:
+
+```rust
+fn size(&self) -> Size<Length> {
+    Size {
+        width: Length::Shrink,
+        height: Length::Fill,
+    }
+}
+```
+
+#### layout
+
+Computes the layout of the widget:
+
+```rust
+fn layout(
+    &mut self,
+    tree: &mut Tree,
+    renderer: &Renderer,
+    limits: &layout::Limits,
+) -> layout::Node {
+    let size = limits.resolve(
+        self.width,
+        self.height,
+        Size::new(100.0, 50.0)  // Intrinsic size
+    );
+    
+    layout::Node::new(size)
+}
+```
+
+#### draw
+
+Renders the widget:
+
+```rust
+fn draw(
+    &self,
+    tree: &Tree,
+    renderer: &mut Renderer,
+    theme: &Theme,
+    style: &renderer::Style,
+    layout: Layout<'_>,
+    cursor: mouse::Cursor,
+    viewport: &Rectangle,
+) {
+    let bounds = layout.bounds();
+    
+    renderer.fill_quad(
+        renderer::Quad {
+            bounds,
+            border: border::rounded(4),
+            ..renderer::Quad::default()
+        },
+        theme.palette().primary,
+    );
+}
+```
+
+### Optional Methods
+
+#### update
+
+Handles events:
+
+```rust
+fn update(
+    &mut self,
+    tree: &mut Tree,
+    event: &Event,
+    layout: Layout<'_>,
+    cursor: mouse::Cursor,
+    renderer: &Renderer,
+    shell: &mut Shell<'_, Message>,
+    viewport: &Rectangle,
+) {
+    match event {
+        Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+            if cursor.is_over(layout.bounds()) {
+                shell.publish(Message::Clicked);
+            }
+        }
+        _ => {}
+    }
+}
+```
+
+#### mouse_interaction
+
+Returns the mouse cursor interaction:
+
+```rust
+fn mouse_interaction(
+    &self,
+    tree: &Tree,
+    layout: Layout<'_>,
+    cursor: mouse::Cursor,
+    viewport: &Rectangle,
+    renderer: &Renderer,
+) -> mouse::Interaction {
+    if cursor.is_over(layout.bounds()) {
+        mouse::Interaction::Pointer
+    } else {
+        mouse::Interaction::None
+    }
+}
+```
+
+## Stateful Widgets
+
+For widgets that need state, use the `tag` and `state` methods:
+
+```rust
+use iced::advanced::widget::tree::{Tag, State};
+
+struct Counter {
+    // Configuration (immutable)
+}
+
+struct CounterState {
+    count: i32,
+}
+
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Counter
+where
+    Renderer: renderer::Renderer,
+{
+    fn tag(&self) -> Tag {
+        Tag::of::<CounterState>()
+    }
+
+    fn state(&self) -> State {
+        State::new(CounterState { count: 0 })
+    }
+    
+    fn update(
+        &mut self,
+        tree: &mut Tree,
+        event: &Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &Renderer,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) {
+        let state = tree.state.downcast_mut::<CounterState>();
+        
+        // Update state...
+        state.count += 1;
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        let state = tree.state.downcast_ref::<CounterState>();
+        
+        // Draw using state...
+    }
+
+    // ... other methods
+}
+```
+
+## Widgets with Children
+
+For container-like widgets:
+
+```rust
+use iced::advanced::widget::Tree;
+
+struct Container<'a, Message> {
+    content: Element<'a, Message>,
+}
+
+impl<'a, Message, Theme, Renderer> Widget<Message, Theme, Renderer>
+    for Container<'a, Message>
+where
+    Renderer: renderer::Renderer,
+{
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(std::slice::from_ref(&self.content));
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        let child = self.content.as_widget_mut()
+            .layout(&mut tree.children[0], renderer, limits);
+        
+        // Position child and create container node
+        layout::Node::with_children(
+            child.size(),
+            vec![child],
+        )
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        // Draw container background...
+        
+        // Draw child
+        self.content.as_widget().draw(
+            &tree.children[0],
+            renderer,
+            theme,
+            style,
+            layout.children().next().unwrap(),
+            cursor,
+            viewport,
+        );
+    }
+}
+```
+
+## Advanced: Canvas Widget
+
+For complex graphics, use the `canvas` widget with a `Program`:
+
+```rust
+use iced::widget::canvas::{self, Canvas, Program};
+use iced::{Element, Rectangle, Renderer, Theme, Point};
+use iced::mouse;
+
+struct Clock;
+
+impl Program<Message> for Clock {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &Renderer,
+        theme: &Theme,
+        bounds: Rectangle,
+        _cursor: mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let palette = theme.extended_palette();
+        
+        // Draw clock face
+        let center = Point::new(bounds.width / 2.0, bounds.height / 2.0);
+        let radius = bounds.width.min(bounds.height) / 2.0 - 10.0;
+        
+        frame.fill_circle(
+            center,
+            radius,
+            palette.background.strong.color,
+        );
+        
+        // Draw clock hands...
+        
+        vec![frame.into_geometry()]
+    }
+}
+
+fn view(state: &State) -> Element<'_, Message> {
+    Canvas::new(Clock)
+        .width(200)
+        .height(200)
+        .into()
+}
+```
+
+## Examples in the Repository
+
+The Iced repository contains several custom widget examples:
+
+- **`custom_widget`** - A simple circle widget demonstrating the basics
+- **`geometry`** - Using the canvas widget for complex graphics
+- **`custom_quad`** - Low-level quad rendering
+- **`custom_shader`** - Using custom shaders with widgets
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Start with canvas for graphics-heavy widgets">
+    If your widget primarily involves custom graphics, use the `canvas` widget with a `Program` instead of implementing `Widget` directly. It's simpler and more efficient.
+  </Accordion>
+
+  <Accordion title="Minimize state">
+    Keep widget state minimal. Prefer deriving visual state from the view function's parameters rather than storing it in widget state.
+  </Accordion>
+
+  <Accordion title="Use intrinsic sizing">
+    Provide sensible intrinsic sizes in the `layout` method so your widget works well with `Length::Shrink`.
+  </Accordion>
+
+  <Accordion title="Handle all event types">
+    In the `update` method, handle or explicitly ignore all relevant event types to avoid surprising behavior.
+  </Accordion>
+
+  <Accordion title="Provide builder methods">
+    Add convenient builder methods for common configurations:
+    ```rust
+    impl Circle {
+        pub fn radius(mut self, radius: f32) -> Self {
+            self.radius = radius;
+            self
+        }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Layout" icon="table-cells" href="/guides/layout">
+    Understand layout computation
+  </Card>
+  <Card title="Styling" icon="paintbrush" href="/guides/styling">
+    Learn about widget styling
+  </Card>
+</CardGroup>

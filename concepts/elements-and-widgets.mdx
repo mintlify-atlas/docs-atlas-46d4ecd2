@@ -1,0 +1,392 @@
+---
+title: Elements and Widgets
+description: Understanding the building blocks of Iced user interfaces
+---
+
+# Elements and Widgets
+
+In Iced, your user interface is built from **widgets** that are converted into **elements**. Understanding the relationship between these two concepts is key to building effective UIs.
+
+## Elements vs Widgets
+
+### What is an Element?
+
+An `Element` is a generic widget - it's what your `view` function must return:
+
+```rust
+use iced::Element;
+
+fn view(state: &State) -> Element<'_, Message> {
+    // Return any widget converted to an Element
+}
+```
+
+<Note>
+  `Element<'a, Message>` is a type alias for a widget that is generic over the message type it produces.
+</Note>
+
+### What is a Widget?
+
+A widget is a specific UI component like a button, text input, or column. Widgets implement layout, rendering, and event handling:
+
+```rust
+use iced::widget::{button, text, column};
+
+// These are all widgets:
+let my_button = button("Click me");
+let my_text = text("Hello");
+let my_column = column![my_text, my_button];
+```
+
+### Converting Widgets to Elements
+
+Every widget can be converted to an `Element` by calling `.into()`:
+
+```rust
+fn view(state: &State) -> Element<'_, Message> {
+    button("Click me")
+        .on_press(Message::ButtonPressed)
+        .into()  // Convert widget to Element
+}
+```
+
+<Info>
+  The `.into()` call is required because `view` must return `Element`, not a specific widget type.
+</Info>
+
+## Built-in Widgets
+
+Iced provides many built-in widgets in the `widget` module:
+
+### Basic Widgets
+
+<Tabs>
+  <Tab title="Text">
+    ```rust
+    use iced::widget::text;
+    
+    text("Hello, world!")
+        .size(20)
+        .color([1.0, 0.0, 0.0])  // RGB red
+    ```
+    
+    Display static or dynamic text.
+  </Tab>
+  <Tab title="Button">
+    ```rust
+    use iced::widget::button;
+    
+    button("Click me")
+        .on_press(Message::ButtonPressed)
+        .padding(10)
+    ```
+    
+    Clickable button that produces messages.
+  </Tab>
+  <Tab title="Text Input">
+    ```rust
+    use iced::widget::text_input;
+    
+    text_input("Placeholder text", &state.value)
+        .on_input(Message::InputChanged)
+        .on_submit(Message::Submit)
+        .padding(10)
+    ```
+    
+    Single-line text input field.
+  </Tab>
+  <Tab title="Checkbox">
+    ```rust
+    use iced::widget::checkbox;
+    
+    checkbox(state.checked)
+        .label("Enable feature")
+        .on_toggle(Message::CheckboxToggled)
+    ```
+    
+    Toggle checkbox with optional label.
+  </Tab>
+</Tabs>
+
+## Layout Widgets
+
+Layout widgets position and arrange other widgets:
+
+### Column
+
+Arranges widgets vertically:
+
+```rust
+use iced::widget::column;
+
+column![
+    text("Title"),
+    text("Subtitle"),
+    button("Action"),
+]
+.spacing(10)  // Space between items
+.padding(20)  // Outer padding
+```
+
+### Row
+
+Arranges widgets horizontally:
+
+```rust
+use iced::widget::row;
+
+row![
+    text("Left"),
+    text("Center"),
+    text("Right"),
+]
+.spacing(10)
+.align_y(Center)
+```
+
+### Container
+
+Positions or aligns a single widget:
+
+```rust
+use iced::widget::container;
+use iced::Fill;
+
+container(text("Centered!"))
+    .center_x(Fill)
+    .center_y(Fill)
+    .width(Fill)
+    .height(Fill)
+```
+
+<Info>
+  There is no unified layout system in Iced. Each widget implements its own layout strategy.
+</Info>
+
+## Builder Pattern
+
+Widgets are configured using the builder pattern - method chaining:
+
+```rust
+use iced::widget::{button, column, text};
+
+column![
+    text(counter.value)
+        .size(20)        // Configure text size
+        .color([1.0, 0.0, 0.0]),  // Red color
+    button("Increment")
+        .on_press(Message::Increment)
+        .padding(10),    // Button padding
+]
+.spacing(10)             // Column spacing
+.into()                  // Convert to Element
+```
+
+Each method returns the widget, allowing you to chain multiple configurations.
+
+## Widget Sizing
+
+Widget dimensions are controlled using `Length`:
+
+<Tabs>
+  <Tab title="Shrink">
+    ```rust
+    use iced::Shrink;
+    
+    button("Click me")
+        .width(Shrink)   // Use intrinsic size
+        .height(Shrink)
+    ```
+    
+    Widget uses its natural/minimum size (default for most widgets).
+  </Tab>
+  <Tab title="Fill">
+    ```rust
+    use iced::Fill;
+    
+    button("Click me")
+        .width(Fill)     // Take all available width
+        .height(Fill)    // Take all available height
+    ```
+    
+    Widget expands to fill available space.
+  </Tab>
+  <Tab title="Fixed">
+    ```rust
+    button("Click me")
+        .width(300)      // 300 pixels wide
+        .height(50)      // 50 pixels tall
+    ```
+    
+    Widget uses a fixed pixel size.
+  </Tab>
+</Tabs>
+
+<Note>
+  Most widgets use `Shrink` by default, but will inherit `Fill` from their children.
+</Note>
+
+## Message Production
+
+Widgets produce messages when users interact with them:
+
+### on_press (Buttons)
+
+```rust
+button("Click me")
+    .on_press(Message::ButtonPressed)
+```
+
+Without `.on_press()`, the button is disabled.
+
+### on_input (Text Inputs)
+
+```rust
+text_input("Enter text", &state.input)
+    .on_input(Message::InputChanged)  // Called on every keystroke
+    .on_submit(Message::Submit)       // Called when Enter is pressed
+```
+
+The `on_input` closure wraps the `String` value in your message.
+
+### on_toggle (Checkboxes)
+
+```rust
+checkbox(state.checked)
+    .on_toggle(Message::Toggled)  // Receives bool
+```
+
+The boolean represents the new checked state.
+
+## Generic Message Types
+
+Widgets and elements are generic over the message type:
+
+```rust
+// A button that produces Message::Increment
+let button: Button<'_, Message> = button("Increment")
+    .on_press(Message::Increment);
+
+// Converted to Element<Message>
+let element: Element<'_, Message> = button.into();
+```
+
+This type safety ensures widgets can only produce messages your update function can handle.
+
+## Message Mapping
+
+You can transform messages from one type to another using `.map()`:
+
+```rust
+// Widget produces TaskMessage
+fn task_view(task: &Task) -> Element<'_, TaskMessage> {
+    button("Delete")
+        .on_press(TaskMessage::Delete)
+        .into()
+}
+
+// Map TaskMessage to parent Message
+fn view(state: &State) -> Element<'_, Message> {
+    state.tasks
+        .iter()
+        .map(|task| {
+            task_view(task)
+                .map(Message::TaskMessage)  // Wrap in parent message
+        })
+        .collect()
+}
+```
+
+This enables component composition and message nesting.
+
+## Advanced Layout Example
+
+Here's a real layout from the todos example:
+
+```rust src/lib.rs:188-241
+use iced::widget::{column, container, row, text, text_input};
+use iced::{Center, Fill, Element};
+
+fn view(state: &State) -> Element<'_, Message> {
+    let title = text("todos")
+        .width(Fill)
+        .size(100)
+        .align_x(Center);
+
+    let input = text_input("What needs to be done?", &state.input_value)
+        .on_input(Message::InputChanged)
+        .on_submit(Message::CreateTask)
+        .padding(15)
+        .size(30);
+
+    let controls = view_controls(&state.tasks, state.filter);
+    let tasks = view_tasks(&state.tasks, state.filter);
+
+    let content = column![title, input, controls, tasks]
+        .spacing(20)
+        .max_width(800);
+
+    scrollable(center_x(content).padding(40)).into()
+}
+```
+
+## Styling Widgets
+
+Widgets can be styled using the `.style()` method:
+
+```rust
+use iced::widget::button;
+use iced::Theme;
+
+button("Primary")
+    .style(button::primary)  // Built-in style function
+
+// Or with a custom closure:
+button("Custom")
+    .style(|theme: &Theme, status| {
+        let palette = theme.extended_palette();
+        
+        match status {
+            button::Status::Active => {
+                button::Style::default()
+                    .with_background(palette.success.strong.color)
+            }
+            _ => button::primary(theme, status),
+        }
+    })
+```
+
+<Info>
+  Most built-in widgets provide styling functions in their respective modules, like `button::primary`, `container::rounded_box`, or `text::danger`.
+</Info>
+
+## Creating Custom Widgets
+
+You can create your own custom widgets by implementing the `Widget` trait, but that's an advanced topic. For most use cases, composing built-in widgets is sufficient.
+
+## Best Practices
+
+<Card title="Element Guidelines" icon="box">
+  - Always call `.into()` to convert widgets to elements
+  - Use `Element<'_, Message>` as your view return type
+  - Extract complex UI into separate functions that return `Element`
+</Card>
+
+<Card title="Widget Guidelines" icon="package">
+  - Use layout widgets (column, row, container) to structure your UI
+  - Configure widgets with the builder pattern
+  - Use `Fill` sparingly - most widgets should use `Shrink`
+  - Extract repeated widget patterns into helper functions
+</Card>
+
+<Card title="Message Guidelines" icon="message-circle">
+  - Only add message handlers (like `.on_press()`) when needed
+  - Use `.map()` to transform messages for component composition
+  - Match your message types between view and update
+</Card>
+
+## Next Steps
+
+- [Widgets Reference](/widgets/overview) - Complete catalog of built-in widgets
+- [Styling](/guides/styling) - Learn how to customize widget appearance
+- [Custom Widgets](/guides/custom-widgets) - Build your own widgets

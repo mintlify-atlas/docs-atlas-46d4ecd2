@@ -1,0 +1,295 @@
+---
+title: 'Checkbox'
+description: 'A toggleable checkbox widget for binary choices'
+---
+
+## Overview
+
+A `Checkbox` is a box that can be checked or unchecked to represent binary choices. It can optionally have a text label and supports custom styling.
+
+## Constructor
+
+### `checkbox::Checkbox::new`
+
+```rust
+pub fn new(is_checked: bool) -> Self
+```
+
+Creates a new `Checkbox` with the given checked state.
+
+**Parameters:**
+- `is_checked` - Whether the checkbox is currently checked
+
+**Default size:** 16.0 pixels
+
+## Builder Methods
+
+### Label
+
+#### `label`
+
+```rust
+pub fn label(self, label: impl text::IntoFragment<'a>) -> Self
+```
+
+Sets the text label displayed next to the checkbox.
+
+### Event Handlers
+
+#### `on_toggle`
+
+```rust
+pub fn on_toggle<F>(self, f: F) -> Self
+where
+    F: 'a + Fn(bool) -> Message
+```
+
+Sets the function called when the checkbox is toggled. The function receives the new checked state and must produce a message. Unless this is called, the checkbox will be disabled.
+
+#### `on_toggle_maybe`
+
+```rust
+pub fn on_toggle_maybe<F>(self, f: Option<F>) -> Self
+where
+    F: Fn(bool) -> Message + 'a
+```
+
+Conditionally sets the toggle handler. If `None`, the checkbox will be disabled.
+
+### Layout
+
+#### `width`
+
+```rust
+pub fn width(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width of the checkbox (including label).
+
+#### `size`
+
+```rust
+pub fn size(self, size: impl Into<Pixels>) -> Self
+```
+
+Sets the size of the checkbox box itself.
+
+#### `spacing`
+
+```rust
+pub fn spacing(self, spacing: impl Into<Pixels>) -> Self
+```
+
+Sets the spacing between the checkbox and its label. Default is half the checkbox size.
+
+### Text Styling
+
+#### `text_size`
+
+```rust
+pub fn text_size(self, text_size: impl Into<Pixels>) -> Self
+```
+
+Sets the text size of the label.
+
+#### `line_height`
+
+```rust
+pub fn line_height(self, line_height: impl Into<text::LineHeight>) -> Self
+```
+
+Sets the line height of the label.
+
+#### `shaping`
+
+```rust
+pub fn shaping(self, shaping: text::Shaping) -> Self
+```
+
+Sets the text shaping strategy (Basic or Advanced).
+
+#### `wrapping`
+
+```rust
+pub fn wrapping(self, wrapping: text::Wrapping) -> Self
+```
+
+Sets the text wrapping strategy.
+
+#### `font`
+
+```rust
+pub fn font(self, font: impl Into<Renderer::Font>) -> Self
+```
+
+Sets the font of the label text.
+
+### Icon
+
+#### `icon`
+
+```rust
+pub fn icon(self, icon: Icon<Renderer::Font>) -> Self
+```
+
+Sets a custom icon displayed when the checkbox is checked.
+
+```rust
+pub struct Icon<Font> {
+    pub font: Font,
+    pub code_point: char,
+    pub size: Option<Pixels>,
+    pub line_height: text::LineHeight,
+    pub shaping: text::Shaping,
+}
+```
+
+### Appearance
+
+#### `style`
+
+```rust
+pub fn style(self, style: impl Fn(&Theme, Status) -> Style + 'a) -> Self
+```
+
+Sets a custom style function for the checkbox.
+
+## Status
+
+```rust
+pub enum Status {
+    Active { is_checked: bool },
+    Hovered { is_checked: bool },
+    Disabled { is_checked: bool },
+}
+```
+
+## Style
+
+```rust
+pub struct Style {
+    pub background: Background,
+    pub icon_color: Color,
+    pub border: Border,
+    pub text_color: Option<Color>,
+}
+```
+
+### Built-in Styles
+
+- `primary` - Primary checkbox style
+- `secondary` - Secondary checkbox style
+- `success` - Success/positive checkbox (green)
+- `danger` - Danger/negative checkbox (red)
+
+## Examples
+
+### Basic Checkbox
+
+```rust
+use iced::widget::checkbox;
+
+struct State {
+   is_checked: bool,
+}
+
+enum Message {
+    CheckboxToggled(bool),
+}
+
+fn view(state: &State) -> Element<'_, Message> {
+    checkbox(state.is_checked)
+        .label("Toggle me!")
+        .on_toggle(Message::CheckboxToggled)
+        .into()
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::CheckboxToggled(is_checked) => {
+            state.is_checked = is_checked;
+        }
+    }
+}
+```
+
+### Disabled Checkbox
+
+```rust
+checkbox(true)
+    .label("I am disabled")
+```
+
+### Styled Checkbox
+
+```rust
+checkbox(state.agree_to_terms)
+    .label("I agree to the terms")
+    .on_toggle(Message::TermsToggled)
+    .style(checkbox::success)
+```
+
+### Custom Size and Spacing
+
+```rust
+checkbox(state.enabled)
+    .label("Enable feature")
+    .size(24)
+    .spacing(15)
+    .text_size(18)
+    .on_toggle(Message::FeatureToggled)
+```
+
+### Conditionally Enabled
+
+```rust
+let can_toggle = state.is_unlocked;
+
+checkbox(state.option_enabled)
+    .label("Advanced option")
+    .on_toggle_maybe(
+        can_toggle.then(|| Message::OptionToggled)
+    )
+```
+
+### Custom Style
+
+```rust
+checkbox(state.selected)
+    .label("Custom")
+    .on_toggle(Message::SelectionToggled)
+    .style(|theme, status| {
+        let is_checked = match status {
+            checkbox::Status::Active { is_checked }
+            | checkbox::Status::Hovered { is_checked }
+            | checkbox::Status::Disabled { is_checked } => is_checked,
+        };
+        
+        checkbox::Style {
+            background: if is_checked {
+                Background::Color(Color::from_rgb(0.0, 0.7, 0.3))
+            } else {
+                Background::Color(Color::WHITE)
+            },
+            icon_color: Color::WHITE,
+            border: Border {
+                radius: 4.0.into(),
+                width: 2.0,
+                color: Color::from_rgb(0.0, 0.7, 0.3),
+            },
+            text_color: None,
+        }
+    })
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Button" href="/api/widget/button">
+    For clickable actions
+  </Card>
+  
+  <Card title="Slider" href="/api/widget/slider">
+    For selecting values from a range
+  </Card>
+</CardGroup>

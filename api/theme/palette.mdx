@@ -1,0 +1,384 @@
+---
+title: Palette
+description: Color palette structure and extended colors in Iced themes
+---
+
+# Palette
+
+The `Palette` struct defines the six core colors of a theme. An `Extended` palette automatically generates variations of these colors for different widget states.
+
+## Base Palette
+
+```rust
+pub struct Palette {
+    pub background: Color,
+    pub text: Color,
+    pub primary: Color,
+    pub success: Color,
+    pub warning: Color,
+    pub danger: Color,
+}
+```
+
+### Core Colors
+
+- **background**: The base background color of your application
+- **text**: The default text color
+- **primary**: The primary accent color (for buttons, links, etc.)
+- **success**: Color for successful operations (typically green)
+- **warning**: Color for warnings (typically yellow/orange)
+- **danger**: Color for errors and dangerous actions (typically red)
+
+## Built-in Palettes
+
+Each built-in theme has a corresponding palette constant:
+
+```rust
+Palette::LIGHT
+Palette::DARK
+Palette::DRACULA
+Palette::NORD
+Palette::SOLARIZED_LIGHT
+Palette::SOLARIZED_DARK
+Palette::GRUVBOX_LIGHT
+Palette::GRUVBOX_DARK
+Palette::CATPPUCCIN_LATTE
+Palette::CATPPUCCIN_FRAPPE
+Palette::CATPPUCCIN_MACCHIATO
+Palette::CATPPUCCIN_MOCHA
+Palette::TOKYO_NIGHT
+Palette::TOKYO_NIGHT_STORM
+Palette::TOKYO_NIGHT_LIGHT
+Palette::KANAGAWA_WAVE
+Palette::KANAGAWA_DRAGON
+Palette::KANAGAWA_LOTUS
+Palette::MOONFLY
+Palette::NIGHTFLY
+Palette::OXOCARBON
+Palette::FERRA
+```
+
+## Extended Palette
+
+The `Extended` struct provides an expanded set of colors derived from the base palette:
+
+```rust
+pub struct Extended {
+    pub background: Background,
+    pub primary: Primary,
+    pub secondary: Secondary,
+    pub success: Success,
+    pub warning: Warning,
+    pub danger: Danger,
+    pub is_dark: bool,
+}
+```
+
+### Generating Extended Palettes
+
+```rust
+impl Extended {
+    pub fn generate(palette: Palette) -> Self
+}
+```
+
+Generates an extended palette from a base palette with automatic color variations.
+
+## Color Pair
+
+```rust
+pub struct Pair {
+    pub color: Color,
+    pub text: Color,
+}
+```
+
+A pair of background and text colors. The text color is guaranteed to be readable on the background color.
+
+```rust
+impl Pair {
+    pub fn new(color: Color, text: Color) -> Self
+}
+```
+
+## Color Categories
+
+### Background
+
+```rust
+pub struct Background {
+    pub base: Pair,
+    pub weakest: Pair,
+    pub weaker: Pair,
+    pub weak: Pair,
+    pub neutral: Pair,
+    pub strong: Pair,
+    pub stronger: Pair,
+    pub strongest: Pair,
+}
+```
+
+Eight levels of background colors from weakest to strongest deviation from the base.
+
+### Primary
+
+```rust
+pub struct Primary {
+    pub base: Pair,
+    pub weak: Pair,
+    pub strong: Pair,
+}
+```
+
+Three variations of the primary color.
+
+### Secondary
+
+```rust
+pub struct Secondary {
+    pub base: Pair,
+    pub weak: Pair,
+    pub strong: Pair,
+}
+```
+
+Generated secondary colors for subtle accents.
+
+### Success, Warning, Danger
+
+```rust
+pub struct Success {
+    pub base: Pair,
+    pub weak: Pair,
+    pub strong: Pair,
+}
+
+pub struct Warning {
+    pub base: Pair,
+    pub weak: Pair,
+    pub strong: Pair,
+}
+
+pub struct Danger {
+    pub base: Pair,
+    pub weak: Pair,
+    pub strong: Pair,
+}
+```
+
+Each semantic color comes with three variations.
+
+## Color Utilities
+
+### Lightening and Darkening
+
+```rust
+pub fn lighten(color: Color, amount: f32) -> Color
+```
+Lightens a color by the given factor (0.0 to 1.0).
+
+```rust
+pub fn darken(color: Color, amount: f32) -> Color
+```
+Darkens a color by the given factor (0.0 to 1.0).
+
+```rust
+pub fn deviate(color: Color, amount: f32) -> Color
+```
+Lightens if the color is dark, darkens if the color is light.
+
+### Color Mixing
+
+```rust
+pub fn mix(a: Color, b: Color, factor: f32) -> Color
+```
+Mixes two colors. Factor of 0.0 returns `a`, 1.0 returns `b`, 0.5 is halfway.
+
+### Readability
+
+```rust
+pub fn readable(background: Color, text: Color) -> Color
+```
+Adjusts the text color to ensure it's readable on the background. If the text is already readable, it's returned unchanged.
+
+```rust
+pub fn is_dark(color: Color) -> bool
+```
+Returns `true` if the color is considered dark (lightness < 0.6 in Oklch color space).
+
+## Examples
+
+### Accessing Palette Colors
+
+```rust
+use iced::Theme;
+
+let theme = Theme::TokyoNight;
+let palette = theme.palette();
+
+println!("Background: {:?}", palette.background);
+println!("Primary: {:?}", palette.primary);
+println!("Success: {:?}", palette.success);
+```
+
+### Using Extended Colors
+
+```rust
+use iced::Theme;
+
+let theme = Theme::Nord;
+let extended = theme.extended_palette();
+
+// Get color variations
+let primary_base = extended.primary.base.color;
+let primary_weak = extended.primary.weak.color;
+let primary_strong = extended.primary.strong.color;
+
+// Get background variations
+let bg_weak = extended.background.weak.color;
+let bg_strong = extended.background.strong.color;
+
+// Check if theme is dark
+if extended.is_dark {
+    println!("This is a dark theme");
+}
+```
+
+### Creating a Custom Palette
+
+```rust
+use iced::{Color, theme::Palette};
+
+let palette = Palette {
+    background: Color::from_rgb(0.95, 0.95, 0.97),
+    text: Color::from_rgb(0.1, 0.1, 0.12),
+    primary: Color::from_rgb(0.2, 0.5, 0.9),
+    success: Color::from_rgb(0.2, 0.7, 0.3),
+    warning: Color::from_rgb(0.9, 0.6, 0.1),
+    danger: Color::from_rgb(0.8, 0.2, 0.2),
+};
+```
+
+### Using Color Utilities
+
+```rust
+use iced::{Color, theme::palette};
+
+let base_color = Color::from_rgb(0.3, 0.5, 0.9);
+
+// Create lighter and darker variations
+let light = palette::lighten(base_color, 0.2);
+let dark = palette::darken(base_color, 0.2);
+
+// Mix with background for subtle effect
+let background = Color::from_rgb(0.1, 0.1, 0.1);
+let subtle = palette::mix(base_color, background, 0.3);
+
+// Ensure readability
+let text = Color::WHITE;
+let readable_text = palette::readable(background, text);
+```
+
+### Styling with Extended Palette
+
+```rust
+use iced::widget::button;
+
+fn custom_button_style(theme: &Theme, status: button::Status) -> button::Style {
+    let palette = theme.extended_palette();
+    
+    match status {
+        button::Status::Active => button::Style {
+            background: Some(palette.primary.base.color.into()),
+            text_color: palette.primary.base.text,
+            ..Default::default()
+        },
+        button::Status::Hovered => button::Style {
+            background: Some(palette.primary.strong.color.into()),
+            text_color: palette.primary.strong.text,
+            ..Default::default()
+        },
+        button::Status::Pressed => button::Style {
+            background: Some(palette.primary.weak.color.into()),
+            text_color: palette.primary.weak.text,
+            ..Default::default()
+        },
+        button::Status::Disabled => button::Style {
+            background: Some(palette.background.weak.color.into()),
+            text_color: palette.background.weak.text,
+            ..Default::default()
+        },
+    }
+}
+```
+
+### Semantic Color Usage
+
+```rust
+use iced::widget::{button, container, text};
+use iced::Element;
+
+fn status_message<'a>(message: &str, status: Status) -> Element<'a, Message> {
+    let content = text(message).size(16);
+    
+    let styled = match status {
+        Status::Success => content.style(text::success),
+        Status::Warning => content.style(text::warning),
+        Status::Error => content.style(text::danger),
+        Status::Info => content,
+    };
+    
+    container(styled)
+        .padding(10)
+        .style(container::rounded_box)
+        .into()
+}
+```
+
+### Dynamic Color Generation
+
+```rust
+use iced::{Color, Theme, theme::Palette};
+
+fn create_monochrome_theme(base_hue: f32) -> Theme {
+    let background = Color::from_rgb(
+        0.05 + base_hue * 0.05,
+        0.05 + base_hue * 0.05,
+        0.1 + base_hue * 0.1,
+    );
+    
+    let primary = Color::from_rgb(
+        0.3 + base_hue * 0.3,
+        0.5 + base_hue * 0.2,
+        0.9,
+    );
+    
+    let palette = Palette {
+        background,
+        text: Color::from_rgb(0.9, 0.9, 0.95),
+        primary,
+        success: Color::from_rgb(0.2, 0.8, 0.3),
+        warning: Color::from_rgb(0.9, 0.7, 0.2),
+        danger: Color::from_rgb(0.9, 0.3, 0.3),
+    };
+    
+    Theme::custom("Monochrome", palette)
+}
+```
+
+## Color Science
+
+Iced uses the Oklch color space for color manipulations. Oklch is perceptually uniform, meaning:
+
+- Equal numeric changes produce equal perceptual changes
+- Colors maintain their hue when lightened or darkened
+- Color mixing produces intuitive results
+
+This ensures that automatically generated color variations look harmonious and professional.
+
+## See Also
+
+- [Theme Overview](/api/theme/overview) - Theme system concepts
+- [Built-in Themes](/api/theme/built-in-themes) - All available themes
+- [Custom Themes](/api/theme/custom-themes) - Creating custom themes
+- [Color](/api/core/color) - Core Color type

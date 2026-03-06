@@ -1,0 +1,239 @@
+---
+title: Alignment
+description: Align and position widgets in Iced applications
+---
+
+The alignment module provides types for controlling how widgets are positioned within their parent containers.
+
+## Alignment Enum
+
+The main `Alignment` enum represents alignment on a single axis (horizontal or vertical).
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Alignment {
+    Start,
+    Center,
+    End,
+}
+```
+
+### Variants
+
+<ParamField path="Start" type="variant">
+  Align at the start of the axis (left for horizontal, top for vertical)
+</ParamField>
+
+<ParamField path="Center" type="variant">
+  Align at the center of the axis
+</ParamField>
+
+<ParamField path="End" type="variant">
+  Align at the end of the axis (right for horizontal, bottom for vertical)
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::Alignment;
+
+let align_start = Alignment::Start;
+let align_center = Alignment::Center;
+let align_end = Alignment::End;
+```
+
+## Horizontal Alignment
+
+The `Horizontal` enum provides semantic names for horizontal alignment.
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Horizontal {
+    Left,
+    Center,
+    Right,
+}
+```
+
+### Variants
+
+<ParamField path="Left" type="variant">
+  Align to the left side
+</ParamField>
+
+<ParamField path="Center" type="variant">
+  Horizontally centered
+</ParamField>
+
+<ParamField path="Right" type="variant">
+  Align to the right side
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::alignment::Horizontal;
+
+let left = Horizontal::Left;
+let center = Horizontal::Center;
+let right = Horizontal::Right;
+```
+
+### Converting to Alignment
+
+`Horizontal` can be converted to `Alignment`:
+
+```rust
+impl From<Horizontal> for Alignment {
+    fn from(horizontal: Horizontal) -> Self {
+        match horizontal {
+            Horizontal::Left => Self::Start,
+            Horizontal::Center => Self::Center,
+            Horizontal::Right => Self::End,
+        }
+    }
+}
+```
+
+**Example:**
+
+```rust
+use iced_core::{Alignment, alignment::Horizontal};
+
+let horizontal = Horizontal::Left;
+let alignment: Alignment = horizontal.into();
+assert_eq!(alignment, Alignment::Start);
+```
+
+### Converting from Alignment
+
+`Alignment` can be converted to `Horizontal`:
+
+```rust
+impl From<Alignment> for Horizontal {
+    fn from(alignment: Alignment) -> Self {
+        match alignment {
+            Alignment::Start => Self::Left,
+            Alignment::Center => Self::Center,
+            Alignment::End => Self::Right,
+        }
+    }
+}
+```
+
+## Vertical Alignment
+
+The `Vertical` enum provides semantic names for vertical alignment.
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Vertical {
+    Top,
+    Center,
+    Bottom,
+}
+```
+
+### Variants
+
+<ParamField path="Top" type="variant">
+  Align to the top
+</ParamField>
+
+<ParamField path="Center" type="variant">
+  Vertically centered
+</ParamField>
+
+<ParamField path="Bottom" type="variant">
+  Align to the bottom
+</ParamField>
+
+**Example:**
+
+```rust
+use iced_core::alignment::Vertical;
+
+let top = Vertical::Top;
+let center = Vertical::Center;
+let bottom = Vertical::Bottom;
+```
+
+### Converting to Alignment
+
+`Vertical` can be converted to `Alignment`:
+
+```rust
+impl From<Vertical> for Alignment {
+    fn from(vertical: Vertical) -> Self {
+        match vertical {
+            Vertical::Top => Self::Start,
+            Vertical::Center => Self::Center,
+            Vertical::Bottom => Self::End,
+        }
+    }
+}
+```
+
+**Example:**
+
+```rust
+use iced_core::{Alignment, alignment::Vertical};
+
+let vertical = Vertical::Top;
+let alignment: Alignment = vertical.into();
+assert_eq!(alignment, Alignment::Start);
+```
+
+### Converting from Alignment
+
+`Alignment` can be converted to `Vertical`:
+
+```rust
+impl From<Alignment> for Vertical {
+    fn from(alignment: Alignment) -> Self {
+        match alignment {
+            Alignment::Start => Self::Top,
+            Alignment::Center => Self::Center,
+            Alignment::End => Self::Bottom,
+        }
+    }
+}
+```
+
+## Usage in Layouts
+
+Alignment is typically used when positioning widgets within container widgets like `Row`, `Column`, and `Container`.
+
+**Example: Aligning a button in a container**
+
+```rust
+use iced::widget::container;
+use iced_core::{alignment::Horizontal, alignment::Vertical};
+
+container(button("Click me"))
+    .align_x(Horizontal::Center)
+    .align_y(Vertical::Center)
+```
+
+**Example: Aligning children in a row**
+
+```rust
+use iced::widget::row;
+use iced_core::Alignment;
+
+row([
+    text("First"),
+    text("Second"),
+    text("Third"),
+])
+.align_items(Alignment::Center)
+```
+
+## Design Philosophy
+
+The alignment system uses a two-tier approach:
+
+1. **Generic Alignment**: The `Alignment` enum uses `Start`, `Center`, and `End` to be axis-agnostic
+2. **Semantic Types**: The `Horizontal` and `Vertical` enums provide clearer, direction-specific names
+
+This design allows you to write both generic layout code (using `Alignment`) and more expressive UI code (using `Horizontal` and `Vertical`), with seamless conversion between the two.

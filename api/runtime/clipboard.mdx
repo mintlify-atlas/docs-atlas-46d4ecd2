@@ -1,0 +1,236 @@
+---
+title: Clipboard
+description: Access and manipulate clipboard contents in Iced
+---
+
+# Clipboard
+
+The clipboard module provides task-based operations for reading from and writing to the system clipboard.
+
+## Reading from Clipboard
+
+### Read any content type
+
+```rust
+pub fn read(kind: Kind) -> Task<Result<Arc<Content>, Error>>
+```
+Reads the given `Kind` of `Content` from the clipboard.
+
+### Read text
+
+```rust
+pub fn read_text() -> Task<Result<Arc<String>, Error>>
+```
+Reads the current text contents of the clipboard.
+
+### Read HTML
+
+```rust
+pub fn read_html() -> Task<Result<Arc<String>, Error>>
+```
+Reads the current HTML contents of the clipboard.
+
+### Read files
+
+```rust
+pub fn read_files() -> Task<Result<Arc<[PathBuf]>, Error>>
+```
+Reads the current file paths from the clipboard.
+
+### Read image
+
+```rust
+#[cfg(feature = "image")]
+pub fn read_image() -> Task<Result<Image, Error>>
+```
+Reads the current image from the clipboard (requires `image` feature).
+
+## Writing to Clipboard
+
+```rust
+pub fn write(content: impl Into<Content>) -> Task<Result<(), Error>>
+```
+Writes the given `Content` to the clipboard.
+
+## Types
+
+### Content
+
+```rust
+pub enum Content {
+    Text(String),
+    Html(String),
+    #[cfg(feature = "image")]
+    Image(Image),
+    Files(Vec<PathBuf>),
+}
+```
+
+Represents different types of clipboard content.
+
+**Conversions:**
+- `String` → `Content::Text`
+- `Image` → `Content::Image` (with `image` feature)
+- `Vec<PathBuf>` → `Content::Files`
+
+### Kind
+
+```rust
+pub enum Kind {
+    Text,
+    Html,
+    #[cfg(feature = "image")]
+    Image,
+    Files,
+}
+```
+
+The kind of clipboard content to read.
+
+### Image
+
+```rust
+#[cfg(feature = "image")]
+pub struct Image {
+    pub rgba: Bytes,
+    pub size: Size<u32>,
+}
+```
+
+A clipboard image with RGBA pixels and physical size.
+
+### Error
+
+```rust
+pub enum Error {
+    ClipboardUnavailable,
+    ClipboardOccupied,
+    ContentNotAvailable,
+    ConversionFailure,
+    Unknown { description: Arc<String> },
+}
+```
+
+Possible clipboard errors:
+- **ClipboardUnavailable** - Clipboard is not present or cannot be accessed
+- **ClipboardOccupied** - Native clipboard is held by another party
+- **ContentNotAvailable** - Clipboard contents not available in requested format
+- **ConversionFailure** - Content could not be converted to appropriate format
+- **Unknown** - Any other error
+
+## Examples
+
+### Reading text
+
+```rust
+use iced::clipboard;
+
+enum Message {
+    PasteRequested,
+    TextPasted(Result<Arc<String>, clipboard::Error>),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::PasteRequested => {
+            clipboard::read_text().map(Message::TextPasted)
+        }
+        Message::TextPasted(Ok(text)) => {
+            state.content = text.to_string();
+            Task::none()
+        }
+        Message::TextPasted(Err(error)) => {
+            eprintln!("Failed to read clipboard: {:?}", error);
+            Task::none()
+        }
+    }
+}
+```
+
+### Writing text
+
+```rust
+use iced::clipboard;
+
+enum Message {
+    CopyRequested(String),
+    TextCopied(Result<(), clipboard::Error>),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::CopyRequested(text) => {
+            clipboard::write(text).map(Message::TextCopied)
+        }
+        Message::TextCopied(Ok(())) => {
+            state.status = "Copied to clipboard!".to_string();
+            Task::none()
+        }
+        Message::TextCopied(Err(error)) => {
+            eprintln!("Failed to write clipboard: {:?}", error);
+            Task::none()
+        }
+    }
+}
+```
+
+### Reading files
+
+```rust
+use iced::clipboard;
+
+enum Message {
+    PasteFiles,
+    FilesPasted(Result<Arc<[PathBuf]>, clipboard::Error>),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::PasteFiles => {
+            clipboard::read_files().map(Message::FilesPasted)
+        }
+        Message::FilesPasted(Ok(files)) => {
+            state.files = files.to_vec();
+            Task::none()
+        }
+        Message::FilesPasted(Err(_)) => Task::none(),
+    }
+}
+```
+
+### Reading images (with feature)
+
+```rust
+#[cfg(feature = "image")]
+use iced::clipboard;
+
+enum Message {
+    PasteImage,
+    ImagePasted(Result<clipboard::Image, clipboard::Error>),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::PasteImage => {
+            clipboard::read_image().map(Message::ImagePasted)
+        }
+        Message::ImagePasted(Ok(image)) => {
+            state.clipboard_image = Some(image);
+            Task::none()
+        }
+        Message::ImagePasted(Err(_)) => Task::none(),
+    }
+}
+```
+
+## Platform Support
+
+Clipboard operations are supported on most platforms, but some features may have platform-specific limitations:
+
+- **Windows/Linux/macOS**: Full support for all content types
+- **Web**: Text and HTML support (file operations may be limited)
+- **Wayland**: Full support with clipboard protocols
+
+## See Also
+
+- [Task](/api/runtime/task) - For understanding task execution

@@ -1,0 +1,228 @@
+---
+title: Installation
+description: Learn how to install Iced and configure it for your project with the right features and backends.
+---
+
+Installing Iced is straightforward using Cargo, Rust's package manager. This guide will help you set up Iced with the appropriate features for your use case.
+
+## Prerequisites
+
+Before installing Iced, ensure you have:
+
+- **Rust 1.92 or later** - Install from [rustup.rs](https://rustup.rs/)
+- **Cargo** - Comes with Rust installation
+- A code editor with Rust support (VS Code with rust-analyzer recommended)
+
+<Note>
+Iced requires Rust edition 2024, which is available in Rust 1.92+. Make sure your toolchain is up to date with `rustup update`.
+</Note>
+
+## Basic Installation
+
+Add Iced to your `Cargo.toml`:
+
+```toml Cargo.toml
+[dependencies]
+iced = "0.15.0-dev"
+```
+
+This installs Iced with the default feature set, which includes:
+
+- `wgpu` - GPU-accelerated renderer (Vulkan, Metal, DX12, OpenGL, WebGPU)
+- `tiny-skia` - Software renderer as fallback
+- `crisp` - Pixel snapping for sharp edges
+- `hinting` - Text rendering hints
+- `web-colors` - Web-compatible color blending
+- `thread-pool` - Default futures executor
+- `linux-theme-detection` - System theme detection on Linux
+- `x11` and `wayland` - Linux display server backends
+
+## Choosing an Executor
+
+<Warning>
+**Required**: You must enable at least one executor feature. Without one, your project will not compile.
+</Warning>
+
+Iced requires a futures executor to handle asynchronous operations. Choose one:
+
+<CodeGroup>
+```toml Thread Pool (Default)
+[dependencies]
+iced = { version = "0.15.0-dev", default-features = true }
+```
+
+```toml Tokio
+[dependencies]
+iced = { version = "0.15.0-dev", default-features = false, features = ["tokio", "wgpu", "tiny-skia"] }
+tokio = { version = "1.0", features = ["full"] }
+```
+
+```toml Smol
+[dependencies]
+iced = { version = "0.15.0-dev", default-features = false, features = ["smol", "wgpu", "tiny-skia"] }
+smol = "2"
+```
+</CodeGroup>
+
+## Renderer Configuration
+
+Iced supports multiple rendering backends. Choose based on your needs:
+
+### GPU-Accelerated (wgpu)
+
+Recommended for most applications. Provides hardware acceleration via Vulkan, Metal, or DirectX:
+
+```toml Cargo.toml
+[dependencies]
+iced = { version = "0.15.0-dev", features = ["wgpu"] }
+```
+
+### Software Renderer (tiny-skia)
+
+For systems without GPU support or when a pure software fallback is needed:
+
+```toml Cargo.toml
+[dependencies]
+iced = { version = "0.15.0-dev", features = ["tiny-skia"] }
+```
+
+### Both Renderers
+
+The default configuration includes both for maximum compatibility:
+
+```toml Cargo.toml
+[dependencies]
+iced = { version = "0.15.0-dev", features = ["wgpu", "tiny-skia"] }
+```
+
+## Feature Flags
+
+Enable additional widgets and capabilities as needed:
+
+### Widget Features
+
+```toml Cargo.toml
+[dependencies]
+iced = { version = "0.15.0-dev", features = [
+    "image",      # Image widget with built-in codecs
+    "svg",        # SVG widget
+    "canvas",     # Canvas widget for custom drawing
+    "qr_code",    # QR code generator widget
+    "markdown",   # Markdown rendering widget
+    "lazy",       # Lazy widgets for performance
+] }
+```
+
+<Note>
+The `image` feature includes default codecs (PNG, JPEG, etc.). Use `image-without-codecs` if you want to provide your own codec selection for a smaller binary size.
+</Note>
+
+### Development Features
+
+```toml Cargo.toml
+[dependencies]
+iced = { version = "0.15.0-dev", features = [
+    "debug",        # Debug overlay (press F12)
+    "time-travel",  # Time-travel debugging (experimental)
+    "tester",       # UI testing tools
+] }
+```
+
+### Advanced Features
+
+```toml Cargo.toml
+[dependencies]
+iced = { version = "0.15.0-dev", features = [
+    "advanced",          # Advanced APIs for custom widgets
+    "highlighter",       # Syntax highlighting
+    "selector",          # Widget selector module
+    "advanced-shaping",  # Advanced text shaping (HarfBuzz)
+] }
+```
+
+## Platform-Specific Configuration
+
+### Web (WASM)
+
+For web targets, use the WebGL backend and appropriate features:
+
+```toml Cargo.toml
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+iced = { version = "0.15.0-dev", features = ["webgl", "fira-sans"] }
+```
+
+The `fira-sans` feature embeds the Fira Sans font, which is useful for WASM builds where system fonts aren't available.
+
+### Linux Display Servers
+
+<Warning>
+**Linux Required**: You must enable at least one of `x11` or `wayland` on Linux platforms.
+</Warning>
+
+```toml Cargo.toml
+# Both X11 and Wayland (default)
+[dependencies]
+iced = { version = "0.15.0-dev", features = ["x11", "wayland"] }
+
+# X11 only
+[dependencies]
+iced = { version = "0.15.0-dev", default-features = false, features = ["x11", "wgpu", "thread-pool"] }
+
+# Wayland only
+[dependencies]
+iced = { version = "0.15.0-dev", default-features = false, features = ["wayland", "wgpu", "thread-pool"] }
+```
+
+## Minimal Configuration
+
+For the smallest binary size, disable default features and enable only what you need:
+
+```toml Cargo.toml
+[dependencies]
+iced = { 
+    version = "0.15.0-dev", 
+    default-features = false,
+    features = [
+        "wgpu",        # Or "tiny-skia"
+        "thread-pool", # Or "tokio" or "smol"
+    ]
+}
+```
+
+## Full Featured Configuration
+
+For maximum functionality, enable all features:
+
+```toml Cargo.toml
+[dependencies]
+iced = { 
+    version = "0.15.0-dev",
+    features = [
+        "wgpu",
+        "tiny-skia",
+        "image",
+        "svg",
+        "canvas",
+        "qr_code",
+        "markdown",
+        "lazy",
+        "debug",
+        "highlighter",
+        "advanced",
+    ]
+}
+```
+
+## Verification
+
+Verify your installation by running:
+
+```bash
+cargo build
+```
+
+If the build succeeds, Iced is properly configured. You're now ready to create your first application!
+
+<Card title="Quick Start" icon="rocket" href="/quickstart">
+  Build your first Iced application
+</Card>

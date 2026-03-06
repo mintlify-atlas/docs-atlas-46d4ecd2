@@ -1,0 +1,202 @@
+---
+title: 'Examples Overview'
+description: 'Complete collection of Iced examples showcasing various GUI patterns and widgets'
+---
+
+# Examples Overview
+
+Iced provides 50+ examples demonstrating different GUI patterns, widgets, and features. All examples are available in the [GitHub repository](https://github.com/iced-rs/iced/tree/master/examples).
+
+<Note>
+These examples are compatible with the master branch. For examples compatible with the latest release, switch to the [latest branch](https://github.com/iced-rs/iced/tree/latest/examples).
+</Note>
+
+## Featured Examples
+
+### Tour
+A comprehensive UI tour that runs on both native platforms and the web. Showcases different widgets available in Iced.
+
+**Run with:**
+```bash
+cargo run --package tour
+```
+
+### Todos
+A full-featured todo tracker inspired by TodoMVC. Demonstrates:
+- Dynamic layout
+- Text input and validation
+- Checkboxes and scrollables
+- Icons and custom fonts
+- Async actions and background saving
+- State persistence (localStorage on web, filesystem on native)
+
+**Run with:**
+```bash
+cargo run --package todos
+```
+
+### Game of Life
+An interactive version of Conway's Game of Life featuring:
+- Background thread simulation
+- Canvas with infinite grid
+- Zooming and panning
+- Drawing support
+
+**Run with:**
+```bash
+cargo run --package game_of_life
+```
+
+### Styling
+Demonstrates custom styling with light and dark themes, showcasing how to apply themes to various widgets.
+
+**Run with:**
+```bash
+cargo run --package styling
+```
+
+## Complete Example List
+
+All examples can be run using:
+```bash
+cargo run --package <example-name>
+```
+
+### Basic Examples
+
+| Example | Description |
+|---------|-------------|
+| `counter` | Classic counter with increment/decrement buttons |
+| `events` | Log of native events using conditional subscriptions |
+| `exit` | Demonstrates graceful application exit |
+| `text` | Text rendering and formatting |
+| `layout` | Layout system demonstration |
+
+### Widget Examples
+
+| Example | Description |
+|---------|-------------|
+| `button` | Button widget with various styles |
+| `checkbox` | Checkbox widget demonstration |
+| `pick_list` | Dropdown list of selectable options |
+| `slider` | Slider widget for value selection |
+| `text_input` | Text input and editing |
+| `toggler` | Toggle switch widget |
+| `tooltip` | Tooltips for enhanced UX |
+| `combo_box` | Combo box with autocomplete |
+| `progress_bar` | Progress bar with slider control |
+| `scrollable` | Various scrollable content configurations |
+
+### Canvas & Graphics
+
+| Example | Description |
+|---------|-------------|
+| `bezier_tool` | Paint-like tool for drawing Bézier curves |
+| `clock` | Analog clock using Canvas |
+| `geometry` | Custom widget with Mesh2D primitive |
+| `custom_widget` | Building a custom circular widget |
+| `custom_quad` | Custom quad rendering |
+| `custom_shader` | Custom shader implementation |
+| `gradient` | Gradient rendering |
+| `sierpinski_triangle` | Sierpiński triangle using Canvas and Slider |
+| `solar_system` | Animated solar system with transforms |
+| `svg` | Rendering SVG graphics (Ghostscript Tiger) |
+
+### Advanced Examples
+
+| Example | Description |
+|---------|-------------|
+| `pane_grid` | Grid of panes that can be split and resized |
+| `modal` | Modal dialog implementation |
+| `multi_window` | Multiple window management |
+| `integration` | Integrating Iced into existing wgpu apps |
+| `editor` | Text editor implementation |
+| `markdown` | Markdown rendering |
+| `table` | Table widget demonstration |
+
+### Async & Network
+
+| Example | Description |
+|---------|-------------|
+| `download_progress` | Async file download with progress tracking |
+| `pokedex` | Fetching data from PokéAPI |
+| `websocket` | WebSocket communication |
+
+### Visual Effects
+
+| Example | Description |
+|---------|-------------|
+| `color_palette` | Color palette generator |
+| `loading_spinners` | Various loading spinner styles |
+| `toast` | Toast notification system |
+| `loupe` | Magnifying glass effect |
+| `screenshot` | Taking screenshots |
+| `the_matrix` | Matrix-style animation |
+| `sandpiles` | Sandpile simulation |
+
+### Multimedia & Platform
+
+| Example | Description |
+|---------|-------------|
+| `qr_code` | QR code generation and display |
+| `ferris` | Ferris the crab mascot |
+| `gallery` | Image gallery |
+| `system_information` | Display system information |
+| `url_handler` | URL handling and navigation |
+| `multitouch` | Multi-touch gesture support |
+| `vectorial_text` | Vector text rendering |
+
+### Other Examples
+
+| Example | Description |
+|---------|-------------|
+| `stopwatch` | Stopwatch with start/stop/reset buttons |
+| `lazy` | Lazy widget demonstration |
+| `delineate` | Widget boundary visualization |
+| `changelog` | Application changelog viewer |
+| `arc` | Arc drawing demonstration |
+
+## Example Structure
+
+Most examples follow a consistent structure:
+
+1. **State** - Application state structure
+2. **Messages** - Events that can occur
+3. **Update logic** - How state changes in response to messages
+4. **View logic** - How to render the UI based on state
+5. **Optional subscriptions** - For time-based or external events
+
+## Learning Path
+
+Recommended order for learning:
+
+1. Start with **counter** - Learn basic structure
+2. Try **styling** - Understand themes and visual customization
+3. Explore **todos** - See a complete application
+4. Build custom widgets with **custom_widget**
+5. Dive into **canvas examples** for custom graphics
+6. Study **pane_grid** and **modal** for complex layouts
+
+## Running Examples
+
+### Native
+```bash
+cd examples/<example-name>
+cargo run
+```
+
+### Web (for compatible examples)
+```bash
+trunk serve --open
+```
+
+## Source Code
+
+All examples include complete, working source code. The main logic is typically in `src/main.rs`, demonstrating Iced's architecture principles:
+
+- Pure functions for updates and views
+- Immutable state transformations
+- Type-safe message handling
+- Declarative UI composition
+
+Explore the [examples directory](https://github.com/iced-rs/iced/tree/master/examples) on GitHub for complete implementations.

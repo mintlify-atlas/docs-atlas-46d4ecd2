@@ -1,0 +1,224 @@
+---
+title: Task
+description: Create and manage concurrent asynchronous tasks in Iced
+---
+
+# Task
+
+A `Task<T>` is a set of concurrent actions performed by the iced runtime. Tasks may produce zero or more values of type `T`.
+
+<Note>
+  Tasks must be returned from your `update` or `new` functions to take effect. They represent asynchronous work that the runtime will execute.
+</Note>
+
+## Core Methods
+
+### Creating Tasks
+
+```rust
+pub fn none() -> Self
+```
+Creates a task that does nothing.
+
+```rust
+pub fn done(value: T) -> Self
+where
+    T: MaybeSend + 'static,
+```
+Creates a task that instantly produces the given value.
+
+```rust
+pub fn perform<A>(
+    future: impl Future<Output = A> + MaybeSend + 'static,
+    f: impl FnOnce(A) -> T + MaybeSend + 'static,
+) -> Self
+where
+    T: MaybeSend + 'static,
+    A: MaybeSend + 'static,
+```
+Runs a future to completion and maps its output with the given closure.
+
+```rust
+pub fn run<A>(
+    stream: impl Stream<Item = A> + MaybeSend + 'static,
+    f: impl Fn(A) -> T + MaybeSend + 'static,
+) -> Self
+where
+    T: 'static,
+```
+Runs a stream to completion and maps each item with the given closure.
+
+```rust
+pub fn future(future: impl Future<Output = T> + MaybeSend + 'static) -> Self
+where
+    T: 'static,
+```
+Creates a task that runs the given future and produces its output.
+
+```rust
+pub fn stream(stream: impl Stream<Item = T> + MaybeSend + 'static) -> Self
+where
+    T: 'static,
+```
+Creates a task that runs the given stream and produces each of its items.
+
+### Combining Tasks
+
+```rust
+pub fn batch(tasks: impl IntoIterator<Item = Self>) -> Self
+where
+    T: 'static,
+```
+Combines multiple tasks and runs them in parallel.
+
+```rust
+pub fn chain(self, task: Self) -> Self
+where
+    T: 'static,
+```
+Chains a task to be performed after the current one finishes completely.
+
+### Transforming Tasks
+
+```rust
+pub fn map<O>(self, f: impl FnMut(T) -> O + MaybeSend + 'static) -> Task<O>
+where
+    T: MaybeSend + 'static,
+    O: MaybeSend + 'static,
+```
+Maps the output of a task with the given closure.
+
+```rust
+pub fn then<O>(self, f: impl FnMut(T) -> Task<O> + MaybeSend + 'static) -> Task<O>
+where
+    T: MaybeSend + 'static,
+    O: MaybeSend + 'static,
+```
+Performs a new task for every output of the current task (monadic interface).
+
+```rust
+pub fn collect(self) -> Task<Vec<T>>
+where
+    T: MaybeSend + 'static,
+```
+Collects all the output of the current task into a `Vec`.
+
+```rust
+pub fn discard<O>(self) -> Task<O>
+where
+    T: MaybeSend + 'static,
+    O: MaybeSend + 'static,
+```
+Discards the result of the task. Useful if you only care about side effects.
+
+### Controlling Tasks
+
+```rust
+pub fn abortable(self) -> (Self, Handle)
+where
+    T: 'static,
+```
+Creates a task that can be aborted with the returned `Handle`.
+
+## Task Handle
+
+```rust
+pub struct Handle
+```
+
+A handle to a task that can be used for aborting it.
+
+### Methods
+
+```rust
+pub fn abort(&self)
+```
+Aborts the task.
+
+```rust
+pub fn abort_on_drop(self) -> Self
+```
+Returns a new handle that will call `abort` when all instances are dropped.
+
+```rust
+pub fn is_aborted(&self) -> bool
+```
+Returns `true` if the task has been aborted.
+
+## Helper Functions
+
+```rust
+pub fn widget<T>(operation: impl widget::Operation<T> + 'static) -> Task<T>
+where
+    T: Send + 'static,
+```
+Runs a widget operation and produces its output.
+
+```rust
+pub fn blocking<T>(f: impl FnOnce(mpsc::Sender<T>) + Send + 'static) -> Task<T>
+where
+    T: Send + 'static,
+```
+Runs the given closure in a new thread. Any data sent through the `Sender` will be produced by the task.
+
+```rust
+pub fn try_blocking<T, E>(
+    f: impl FnOnce(mpsc::Sender<T>) -> Result<(), E> + Send + 'static,
+) -> Task<Result<T, E>>
+where
+    T: Send + 'static,
+    E: Send + 'static,
+```
+Runs the given fallible closure in a new thread.
+
+## Examples
+
+### Performing async work
+
+```rust
+use iced::Task;
+
+enum Message {
+    DataFetched(String),
+}
+
+fn update(state: &mut State, message: Message) -> Task<Message> {
+    match message {
+        Message::FetchData => {
+            Task::perform(fetch_data(), Message::DataFetched)
+        }
+        Message::DataFetched(data) => {
+            state.data = data;
+            Task::none()
+        }
+    }
+}
+
+async fn fetch_data() -> String {
+    // Fetch data from API
+    "data".to_string()
+}
+```
+
+### Batching multiple tasks
+
+```rust
+Task::batch([
+    window::close(window_id),
+    clipboard::write("copied text"),
+    font::load(include_bytes!("font.ttf")),
+])
+```
+
+### Chaining tasks
+
+```rust
+Task::perform(save_file(), |_| ())
+    .chain(Task::perform(close_app(), |_| ()))
+```
+
+## See Also
+
+- [Subscription](/api/runtime/subscription) - For passive event streams
+- [Clipboard](/api/runtime/clipboard) - Clipboard task operations
+- [Window](/api/runtime/window) - Window management tasks

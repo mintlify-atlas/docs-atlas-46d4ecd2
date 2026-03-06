@@ -1,0 +1,525 @@
+---
+title: 'Todos Example'
+description: 'Full-featured todo application with persistence, filtering, and editing'
+---
+
+# Todos Example
+
+The todos example is a complete, production-ready todo tracker inspired by [TodoMVC](http://todomvc.com/). It demonstrates how to build a real-world application with Iced.
+
+## Features
+
+- Create, edit, and delete tasks
+- Mark tasks as complete
+- Filter tasks (All, Active, Completed)
+- Automatic background saving
+- State persistence (filesystem on native, localStorage on web)
+- Custom fonts for icons
+- Keyboard shortcuts
+- Focus management
+- Cross-platform (native and web)
+
+## Running the Example
+
+```bash
+cargo run --package todos
+```
+
+## Application Architecture
+
+### State Management
+
+```rust
+#[derive(Debug)]
+enum Todos {
+    Loading,
+    Loaded(State),
+}
+
+#[derive(Debug, Default)]
+struct State {
+    input_value: String,
+    filter: Filter,
+    tasks: Vec<Task>,
+    dirty: bool,
+    saving: bool,
+}
+```
+
+The app uses a two-level state structure:
+- `Todos::Loading` - Initial state while loading saved data
+- `Todos::Loaded(State)` - Active state with all data
+
+### Messages
+
+```rust
+#[derive(Debug, Clone)]
+enum Message {
+    Loaded(Result<SavedState, LoadError>),
+    Saved(Result<(), SaveError>),
+    InputChanged(String),
+    CreateTask,
+    FilterChanged(Filter),
+    TaskMessage(usize, TaskMessage),
+    TabPressed { shift: bool },
+    ToggleFullscreen(window::Mode),
+}
+```
+
+Messages handle:
+- Async operations (loading/saving)
+- User input
+- Task CRUD operations
+- Navigation
+- Window management
+
+## Key Components
+
+### Task Model
+
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Task {
+    #[serde(default = "Uuid::new_v4")]
+    id: Uuid,
+    description: String,
+    completed: bool,
+    
+    #[serde(skip)]
+    state: TaskState,
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum TaskState {
+    #[default]
+    Idle,
+    Editing,
+}
+```
+
+Each task has:
+- Unique ID (UUID) for stable identification
+- Description text
+- Completion status
+- Editing state (not persisted)
+
+### Task Messages
+
+```rust
+#[derive(Debug, Clone)]
+pub enum TaskMessage {
+    Completed(bool),
+    Edit,
+    DescriptionEdited(String),
+    FinishEdition,
+    Delete,
+}
+```
+
+### Filter System
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum Filter {
+    #[default]
+    All,
+    Active,
+    Completed,
+}
+
+impl Filter {
+    fn matches(self, task: &Task) -> bool {
+        match self {
+            Filter::All => true,
+            Filter::Active => !task.completed,
+            Filter::Completed => task.completed,
+        }
+    }
+}
+```
+
+## Update Logic
+
+### Creating Tasks
+
+```rust
+Message::CreateTask => {
+    if !state.input_value.is_empty() {
+        state.tasks.push(Task::new(state.input_value.clone()));
+        state.input_value.clear();
+    }
+    Command::none()
+}
+```
+
+### Editing Tasks
+
+```rust
+Message::TaskMessage(i, task_message) => {
+    if let Some(task) = state.tasks.get_mut(i) {
+        let should_focus = matches!(task_message, TaskMessage::Edit);
+        
+        task.update(task_message);
+        
+        if should_focus {
+            let id = Task::text_input_id(i);
+            Command::batch(vec![
+                operation::focus(id.clone()),
+                operation::select_all(id),
+            ])
+        } else {
+            Command::none()
+        }
+    } else {
+        Command::none()
+    }
+}
+```
+
+When entering edit mode:
+1. Update task state
+2. Focus the text input
+3. Select all text for easy editing
+
+### Automatic Saving
+
+```rust
+let save = if state.dirty && !state.saving {
+    state.dirty = false;
+    state.saving = true;
+    
+    Command::perform(
+        SavedState {
+            input_value: state.input_value.clone(),
+            filter: state.filter,
+            tasks: state.tasks.clone(),
+        }
+        .save(),
+        Message::Saved,
+    )
+} else {
+    Command::none()
+};
+
+Command::batch(vec![command, save])
+```
+
+The app automatically saves when:
+- State becomes dirty (any change)
+- Not currently saving
+- Debounced to save at most twice per second
+
+## View Components
+
+### Task View
+
+```rust
+fn view(&self, i: usize) -> Element<'_, TaskMessage> {
+    match &self.state {
+        TaskState::Idle => {
+            let checkbox = checkbox(self.completed)
+                .label(&self.description)
+                .on_toggle(TaskMessage::Completed)
+                .width(Fill)
+                .size(17)
+                .shaping(text::Shaping::Advanced);
+            
+            row![
+                checkbox,
+                button(edit_icon())
+                    .on_press(TaskMessage::Edit)
+                    .padding(10)
+                    .style(button::text),
+            ]
+            .spacing(20)
+            .align_y(Center)
+            .into()
+        }
+        TaskState::Editing => {
+            let text_input = text_input("Describe your task...", &self.description)
+                .id(Self::text_input_id(i))
+                .on_input(TaskMessage::DescriptionEdited)
+                .on_submit(TaskMessage::FinishEdition)
+                .padding(10);
+            
+            row![
+                text_input,
+                button(row![delete_icon(), "Delete"].spacing(10).align_y(Center))
+                    .on_press(TaskMessage::Delete)
+                    .padding(10)
+                    .style(button::danger)
+            ]
+            .spacing(20)
+            .align_y(Center)
+            .into()
+        }
+    }
+}
+```
+
+Tasks render differently based on state:
+- **Idle**: Checkbox with description and edit button
+- **Editing**: Text input with delete button
+
+### Filter Controls
+
+```rust
+fn view_controls(tasks: &[Task], current_filter: Filter) -> Element<'_, Message> {
+    let tasks_left = tasks.iter().filter(|task| !task.completed).count();
+    
+    let filter_button = |label, filter, current_filter| {
+        let label = text(label);
+        
+        let button = button(label).style(if filter == current_filter {
+            button::primary
+        } else {
+            button::text
+        });
+        
+        button.on_press(Message::FilterChanged(filter)).padding(8)
+    };
+    
+    row![
+        text!(
+            "{tasks_left} {} left",
+            if tasks_left == 1 { "task" } else { "tasks" }
+        )
+        .width(Fill),
+        row![
+            filter_button("All", Filter::All, current_filter),
+            filter_button("Active", Filter::Active, current_filter),
+            filter_button("Completed", Filter::Completed, current_filter,),
+        ]
+        .spacing(10)
+    ]
+    .spacing(20)
+    .align_y(Center)
+    .into()
+}
+```
+
+### Filtered Task List
+
+```rust
+let filtered_tasks = tasks.iter().filter(|task| filter.matches(task));
+
+let tasks: Element<_> = if filtered_tasks.count() > 0 {
+    keyed_column(
+        tasks
+            .iter()
+            .enumerate()
+            .filter(|(_, task)| filter.matches(task))
+            .map(|(i, task)| {
+                (task.id, task.view(i).map(Message::TaskMessage.with(i)))
+            }),
+    )
+    .spacing(10)
+    .into()
+} else {
+    empty_message(match filter {
+        Filter::All => "You have not created a task yet...",
+        Filter::Active => "All your tasks are done! :D",
+        Filter::Completed => "You have not completed a task yet...",
+    })
+};
+```
+
+Uses `keyed_column` for efficient updates when tasks change.
+
+## Persistence
+
+### Native (Filesystem)
+
+```rust
+impl SavedState {
+    fn path() -> std::path::PathBuf {
+        let mut path =
+            if let Some(project_dirs) = directories::ProjectDirs::from("rs", "Iced", "Todos") {
+                project_dirs.data_dir().into()
+            } else {
+                std::env::current_dir().unwrap_or_default()
+            };
+        
+        path.push("todos.json");
+        path
+    }
+    
+    async fn load() -> Result<SavedState, LoadError> {
+        let contents = tokio::fs::read_to_string(Self::path())
+            .await
+            .map_err(|_| LoadError::File)?;
+        
+        serde_json::from_str(&contents).map_err(|_| LoadError::Format)
+    }
+    
+    async fn save(self) -> Result<(), SaveError> {
+        let json = serde_json::to_string_pretty(&self)
+            .map_err(|_| SaveError::Format)?;
+        
+        let path = Self::path();
+        
+        if let Some(dir) = path.parent() {
+            tokio::fs::create_dir_all(dir)
+                .await
+                .map_err(|_| SaveError::Write)?;
+        }
+        
+        tokio::fs::write(path, json.as_bytes())
+            .await
+            .map_err(|_| SaveError::Write)?;
+        
+        tokio::time::sleep(milliseconds(500)).await;
+        Ok(())
+    }
+}
+```
+
+### Web (localStorage)
+
+```rust
+impl SavedState {
+    fn storage() -> Option<web_sys::Storage> {
+        let window = web_sys::window()?;
+        window.local_storage().ok()?
+    }
+    
+    async fn load() -> Result<SavedState, LoadError> {
+        let storage = Self::storage().ok_or(LoadError::File)?;
+        
+        let contents = storage
+            .get_item("state")
+            .map_err(|_| LoadError::File)?
+            .ok_or(LoadError::File)?;
+        
+        serde_json::from_str(&contents).map_err(|_| LoadError::Format)
+    }
+    
+    async fn save(self) -> Result<(), SaveError> {
+        let storage = Self::storage().ok_or(SaveError::Write)?;
+        
+        let json = serde_json::to_string_pretty(&self)
+            .map_err(|_| SaveError::Format)?;
+        
+        storage
+            .set_item("state", &json)
+            .map_err(|_| SaveError::Write)?;
+        
+        Ok(())
+    }
+}
+```
+
+## Keyboard Shortcuts
+
+```rust
+fn subscription(&self) -> Subscription<Message> {
+    use keyboard::key;
+    
+    keyboard::listen().filter_map(|event| match event {
+        keyboard::Event::KeyPressed {
+            key: keyboard::Key::Named(key),
+            modifiers,
+            ..
+        } => match (key, modifiers) {
+            (key::Named::Tab, _) => Some(Message::TabPressed {
+                shift: modifiers.shift(),
+            }),
+            (key::Named::ArrowUp, keyboard::Modifiers::SHIFT) => {
+                Some(Message::ToggleFullscreen(window::Mode::Fullscreen))
+            }
+            (key::Named::ArrowDown, keyboard::Modifiers::SHIFT) => {
+                Some(Message::ToggleFullscreen(window::Mode::Windowed))
+            }
+            _ => None,
+        },
+        _ => None,
+    })
+}
+```
+
+Supported shortcuts:
+- **Tab**: Focus next element
+- **Shift+Tab**: Focus previous element
+- **Shift+↑**: Enter fullscreen
+- **Shift+↓**: Exit fullscreen
+- **Enter**: Submit task / finish editing
+
+## Custom Fonts
+
+```rust
+const ICON_FONT: &'static [u8] = include_bytes!("../fonts/icons.ttf");
+
+fn icon(unicode: char) -> Text<'static> {
+    text(unicode.to_string())
+        .font(Font::with_name("Iced-Todos-Icons"))
+        .width(20)
+        .align_x(Center)
+        .shaping(text::Shaping::Basic)
+}
+
+fn edit_icon() -> Text<'static> {
+    icon('\u{F303}')
+}
+
+fn delete_icon() -> Text<'static> {
+    icon('\u{F1F8}')
+}
+```
+
+## Testing
+
+The example includes comprehensive tests:
+
+```rust
+#[test]
+fn it_creates_a_new_task() -> Result<(), Error> {
+    let (mut todos, _command) = Todos::new();
+    let _command = todos.update(Message::Loaded(Err(LoadError::File)));
+    
+    let mut ui = simulator(&todos);
+    let _input = ui.click(id("new-task"))?;
+    
+    let _ = ui.typewrite("Create the universe");
+    let _ = ui.tap_key(keyboard::key::Named::Enter);
+    
+    for message in ui.into_messages() {
+        let _command = todos.update(message);
+    }
+    
+    let mut ui = simulator(&todos);
+    let _ = ui.find("Create the universe")?;
+    
+    Ok(())
+}
+```
+
+## Key Learnings
+
+This example demonstrates:
+
+1. **Async operations**: Loading and saving data
+2. **Complex state**: Multiple enums and nested structures
+3. **Focus management**: Programmatically controlling focus
+4. **Keyboard handling**: Custom keyboard shortcuts
+5. **Custom fonts**: Loading and using icon fonts
+6. **Cross-platform**: Same code runs native and web
+7. **Persistence**: Platform-specific storage
+8. **Testing**: Comprehensive UI testing
+9. **Performance**: Using keyed columns for efficient updates
+10. **UX patterns**: Automatic saving, inline editing, filtering
+
+## Source Code
+
+View the complete example on GitHub:
+- [todos/src/main.rs](https://github.com/iced-rs/iced/blob/master/examples/todos/src/main.rs)
+- [todos/Cargo.toml](https://github.com/iced-rs/iced/blob/master/examples/todos/Cargo.toml)
+
+## Next Steps
+
+- Add task priority levels
+- Implement due dates
+- Add categories/tags
+- Create a more sophisticated filter system
+- Add keyboard shortcuts for common actions
+- Implement undo/redo
+- Add data export/import

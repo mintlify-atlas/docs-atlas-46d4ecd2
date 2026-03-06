@@ -1,0 +1,125 @@
+---
+title: Introduction to Iced
+description: A cross-platform GUI library for Rust focused on simplicity and type-safety, inspired by Elm.
+---
+
+Iced is a cross-platform GUI library for Rust focused on simplicity and type-safety. Inspired by [Elm](https://elm-lang.org/), it provides a batteries-included API for building responsive user interfaces.
+
+## What is Iced?
+
+Iced is a modern GUI framework that brings functional, reactive programming patterns to Rust. It emphasizes:
+
+<CardGroup cols={2}>
+  <Card title="Type-Safe" icon="shield-check">
+    Leverage Rust's type system to catch errors at compile time
+  </Card>
+  <Card title="Cross-Platform" icon="globe">
+    Build once, run everywhere: Windows, macOS, Linux, and the Web
+  </Card>
+  <Card title="Reactive" icon="bolt">
+    State-driven UI with automatic updates and efficient rendering
+  </Card>
+  <Card title="Batteries-Included" icon="battery-full">
+    Rich set of built-in widgets and styling options out of the box
+  </Card>
+</CardGroup>
+
+## Key Features
+
+- **Simple, easy-to-use API** - Get started quickly with minimal boilerplate
+- **Type-safe, reactive programming model** - Inspired by The Elm Architecture
+- **Cross-platform support** - Windows, macOS, Linux, and the Web
+- **Responsive layout** - Flexible layout system with rows, columns, and containers
+- **Built-in widgets** - Text inputs, scrollables, buttons, and more
+- **Custom widget support** - Create your own widgets when needed
+- **Debug tooling** - Performance metrics and time traveling debugger
+- **First-class async support** - Use futures and streams naturally
+- **Modular ecosystem** - Choose between GPU-accelerated (wgpu) or software rendering (tiny-skia)
+
+<Note>
+Iced is currently **experimental software**. While it's production-ready for many use cases, the API may evolve as the library matures.
+</Note>
+
+## The Elm Architecture
+
+Iced follows [The Elm Architecture](https://guide.elm-lang.org/architecture/), which splits user interfaces into four distinct concepts:
+
+<Steps>
+  <Step title="State">
+    The data that represents your application's current state
+    
+    ```rust
+    #[derive(Default)]
+    struct Counter {
+        value: i32,
+    }
+    ```
+  </Step>
+  
+  <Step title="Messages">
+    User interactions or events that you care about
+    
+    ```rust
+    #[derive(Debug, Clone, Copy)]
+    pub enum Message {
+        Increment,
+        Decrement,
+    }
+    ```
+  </Step>
+  
+  <Step title="View Logic">
+    Display your state as widgets that produce messages
+    
+    ```rust
+    fn view(&self) -> Column<Message> {
+        column![
+            button("+").on_press(Message::Increment),
+            text(self.value).size(50),
+            button("-").on_press(Message::Decrement),
+        ]
+    }
+    ```
+  </Step>
+  
+  <Step title="Update Logic">
+    React to messages and update your state
+    
+    ```rust
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => self.value += 1,
+            Message::Decrement => self.value -= 1,
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+This architecture provides a clear separation of concerns and makes it easy to reason about your application's behavior.
+
+## Philosophy
+
+Iced leverages Rust to its full extent: ownership, borrowing, lifetimes, futures, streams, first-class functions, trait bounds, closures, and more. The library is designed for **advanced Rust programmers** who want to build type-safe, performant GUIs.
+
+<Warning>
+Iced is unforgiving and will not let you cut corners. The type signatures are your guide - everything is connected through the type system. If you're new to Rust or prefer a more gentle learning curve, consider waiting for [the official book](https://book.iced.rs) to be completed.
+</Warning>
+
+## Who Should Use Iced?
+
+Iced is ideal for:
+
+- **Rust developers** building desktop or web applications
+- **Systems programmers** who need native GUI applications
+- **Teams** wanting type-safe UI code with compile-time guarantees
+- **Cross-platform projects** targeting multiple operating systems
+- **Performance-critical applications** requiring efficient rendering
+
+## Next Steps
+
+Ready to get started? Follow our installation guide to set up Iced in your project.
+
+<Card title="Installation" icon="download" href="/installation">
+  Learn how to add Iced to your Rust project
+</Card>

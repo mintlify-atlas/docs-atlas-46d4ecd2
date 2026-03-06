@@ -1,0 +1,369 @@
+---
+title: TextInput
+description: Single-line text input field for user text entry
+---
+
+The `TextInput` widget creates a single-line text field that allows users to enter and edit text. It's one of the most common input widgets in GUI applications.
+
+## Basic Usage
+
+```rust
+use iced::widget::text_input;
+
+struct State {
+    content: String,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    InputChanged(String),
+}
+
+fn view(state: &State) -> Element<Message> {
+    text_input("Type something here...", &state.content)
+        .on_input(Message::InputChanged)
+        .into()
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::InputChanged(content) => {
+            state.content = content;
+        }
+    }
+}
+```
+
+## Builder Methods
+
+### `new(placeholder: &str, value: &str)`
+
+Creates a new text input with a placeholder and current value.
+
+```rust
+text_input("Enter email...", &email_value)
+```
+
+### `on_input(callback: impl Fn(String) -> Message)`
+
+Sets the callback for when text changes. Without this, the input is disabled.
+
+```rust
+text_input("Type...", &value)
+    .on_input(Message::TextChanged)
+```
+
+### `on_input_maybe(callback: Option<impl Fn(String) -> Message>)`
+
+Conditionally enables the input.
+
+```rust
+text_input("Username", &username)
+    .on_input_maybe(if editable {
+        Some(Message::UsernameChanged)
+    } else {
+        None
+    })
+```
+
+### `on_submit(message: Message)`
+
+Sets the message produced when Enter is pressed.
+
+```rust
+text_input("Search...", &query)
+    .on_input(Message::QueryChanged)
+    .on_submit(Message::Search)
+```
+
+### `on_paste(callback: impl Fn(String) -> Message)`
+
+Sets the callback for paste events.
+
+```rust
+text_input("", &content)
+    .on_input(Message::Changed)
+    .on_paste(Message::Pasted)
+```
+
+### `secure(is_secure: bool)`
+
+Makes this a password input (shows dots instead of characters).
+
+```rust
+text_input("Password", &password)
+    .secure(true)
+    .on_input(Message::PasswordChanged)
+```
+
+### `id(id: impl Into<widget::Id>)`
+
+Sets the widget ID for programmatic focus control.
+
+```rust
+use iced::widget::text_input;
+
+const INPUT_ID: &str = "my-input";
+
+text_input("Name", &name)
+    .id(INPUT_ID)
+    .on_input(Message::NameChanged)
+```
+
+### `width(width: impl Into<Length>)`
+
+Sets the input width.
+
+```rust
+text_input("Full width", &value)
+    .on_input(Message::Changed)
+    .width(Length::Fill)
+```
+
+### `padding(padding: impl Into<Padding>)`
+
+Sets the padding inside the input.
+
+Default: `Padding::new(5.0)`
+
+```rust
+text_input("Padded", &value)
+    .on_input(Message::Changed)
+    .padding(10)
+```
+
+### `size(size: impl Into<Pixels>)`
+
+Sets the text size.
+
+```rust
+text_input("Large", &value)
+    .on_input(Message::Changed)
+    .size(20)
+```
+
+### `line_height(line_height: impl Into<LineHeight>)`
+
+Sets the line height.
+
+```rust
+text_input("Tall", &value)
+    .on_input(Message::Changed)
+    .line_height(1.5)
+```
+
+### `font(font: impl Into<Font>)`
+
+Sets the font.
+
+```rust
+text_input("Code", &value)
+    .on_input(Message::Changed)
+    .font(Font::MONOSPACE)
+```
+
+### `alignment(alignment: alignment::Horizontal)`
+
+Sets text alignment.
+
+```rust
+use iced::alignment;
+
+text_input("Centered", &value)
+    .on_input(Message::Changed)
+    .alignment(alignment::Horizontal::Center)
+```
+
+### `icon(icon: Icon<Font>)`
+
+Adds an icon to the input.
+
+```rust
+text_input("Search", &query)
+    .on_input(Message::QueryChanged)
+    .icon(text_input::Icon {
+        font: Font::DEFAULT,
+        code_point: '🔍',
+        size: None,
+        spacing: 10.0,
+        side: text_input::Side::Left,
+    })
+```
+
+### `style(style_fn: impl Fn(&Theme, Status) -> Style)`
+
+Applies custom styling.
+
+```rust
+text_input("Custom", &value)
+    .on_input(Message::Changed)
+    .style(|theme, status| {
+        text_input::Style {
+            background: Color::from_rgb(0.95, 0.95, 0.95).into(),
+            border: Border::rounded(5),
+            ..Default::default()
+        }
+    })
+```
+
+## Input States
+
+Text inputs have several states:
+
+- **Active** - Normal state, ready for input
+- **Focused** - Currently selected for input
+- **Hovered** - Mouse is over the input
+- **Disabled** - No `on_input` callback set
+
+## Controlling Focus
+
+You can programmatically focus text inputs using operations:
+
+```rust
+use iced::widget::text_input;
+use iced::widget::operation;
+
+const INPUT_ID: &str = "search-input";
+
+// In your update function:
+fn update(&mut self, message: Message) -> Command<Message> {
+    match message {
+        Message::FocusInput => {
+            widget::text_input::focus(text_input::Id::new(INPUT_ID))
+        }
+        // ...
+    }
+}
+```
+
+## Form Example
+
+```rust
+use iced::widget::{button, column, text, text_input};
+use iced::{Element, Length};
+
+struct LoginForm {
+    username: String,
+    password: String,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    UsernameChanged(String),
+    PasswordChanged(String),
+    Submit,
+}
+
+impl LoginForm {
+    fn view(&self) -> Element<Message> {
+        column![
+            text("Login").size(24),
+            
+            text("Username"),
+            text_input("Enter username", &self.username)
+                .on_input(Message::UsernameChanged)
+                .width(Length::Fill),
+            
+            text("Password"),
+            text_input("Enter password", &self.password)
+                .secure(true)
+                .on_input(Message::PasswordChanged)
+                .on_submit(Message::Submit)
+                .width(Length::Fill),
+            
+            button("Login")
+                .on_press_maybe(if !self.username.is_empty() && !self.password.is_empty() {
+                    Some(Message::Submit)
+                } else {
+                    None
+                })
+                .width(Length::Fill),
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(300)
+        .into()
+    }
+}
+```
+
+## Search Input Example
+
+```rust
+use iced::widget::{row, text_input};
+use iced::Element;
+
+struct SearchBar {
+    query: String,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    QueryChanged(String),
+    Search,
+}
+
+impl SearchBar {
+    fn view(&self) -> Element<Message> {
+        row![
+            text_input("Search...", &self.query)
+                .on_input(Message::QueryChanged)
+                .on_submit(Message::Search)
+                .width(Length::Fill),
+        ]
+        .spacing(10)
+        .into()
+    }
+}
+```
+
+## Validation Example
+
+```rust
+use iced::widget::{column, text, text_input};
+use iced::{color, Element};
+
+struct EmailInput {
+    email: String,
+}
+
+impl EmailInput {
+    fn is_valid(&self) -> bool {
+        self.email.contains('@') && self.email.contains('.')
+    }
+    
+    fn view(&self) -> Element<Message> {
+        column![
+            text_input("email@example.com", &self.email)
+                .on_input(Message::EmailChanged)
+                .width(Length::Fill),
+            
+            if !self.email.is_empty() && !self.is_valid() {
+                text("Invalid email address")
+                    .size(12)
+                    .color(color!(0xff0000))
+            } else {
+                text("").size(12)  // Empty placeholder
+            },
+        ]
+        .spacing(5)
+        .into()
+    }
+}
+```
+
+## Tips and Best Practices
+
+1. **Always provide a placeholder** - Helps users understand what to enter
+2. **Use `on_submit` for forms** - Allows Enter key submission
+3. **Validate input** - Check values and provide feedback
+4. **Use `.secure(true)` for passwords** - Protects sensitive data
+5. **Set appropriate width** - Use `Length::Fill` in most forms
+6. **Provide clear labels** - Use text widgets to label inputs
+
+## Related Widgets
+
+- [TextEditor](/widgets/all-widgets) - Multi-line text editing
+- [Button](/widgets/button) - For form submission
+- [Text](/widgets/text) - For labels
+- [Container](/widgets/container) - For input grouping

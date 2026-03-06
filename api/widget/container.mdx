@@ -1,0 +1,366 @@
+---
+title: 'Container'
+description: 'A widget that aligns and decorates its contents'
+---
+
+## Overview
+
+A `Container` is a widget that aligns its contents within its boundaries and can apply visual styling like backgrounds, borders, and shadows. It's one of the fundamental layout widgets in Iced.
+
+## Constructor
+
+### `container::Container::new`
+
+```rust
+pub fn new(
+    content: impl Into<Element<'a, Message, Theme, Renderer>>
+) -> Self
+```
+
+Creates a `Container` with the given content.
+
+**Parameters:**
+- `content` - The widget to place inside the container
+
+## Builder Methods
+
+### Identity
+
+#### `id`
+
+```rust
+pub fn id(self, id: impl Into<widget::Id>) -> Self
+```
+
+Sets a unique identifier for the container.
+
+### Layout
+
+#### `width`
+
+```rust
+pub fn width(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width of the container.
+
+#### `height`
+
+```rust
+pub fn height(self, height: impl Into<Length>) -> Self
+```
+
+Sets the height of the container.
+
+#### `max_width`
+
+```rust
+pub fn max_width(self, max_width: impl Into<Pixels>) -> Self
+```
+
+Sets the maximum width.
+
+#### `max_height`
+
+```rust
+pub fn max_height(self, max_height: impl Into<Pixels>) -> Self
+```
+
+Sets the maximum height.
+
+#### `padding`
+
+```rust
+pub fn padding<P: Into<Padding>>(self, padding: P) -> Self
+```
+
+Sets the padding between the container bounds and its content.
+
+### Alignment
+
+#### `center`
+
+```rust
+pub fn center(self, length: impl Into<Length>) -> Self
+```
+
+Sets both width and height, and centers content in both axes.
+
+#### `center_x`
+
+```rust
+pub fn center_x(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width and centers content horizontally.
+
+#### `center_y`
+
+```rust
+pub fn center_y(self, height: impl Into<Length>) -> Self
+```
+
+Sets the height and centers content vertically.
+
+#### `align_x`
+
+```rust
+pub fn align_x(self, alignment: impl Into<alignment::Horizontal>) -> Self
+```
+
+Sets the horizontal alignment: `Left`, `Center`, or `Right`.
+
+#### `align_y`
+
+```rust
+pub fn align_y(self, alignment: impl Into<alignment::Vertical>) -> Self
+```
+
+Sets the vertical alignment: `Top`, `Center`, or `Bottom`.
+
+#### `align_left` / `align_right` / `align_top` / `align_bottom`
+
+```rust
+pub fn align_left(self, width: impl Into<Length>) -> Self
+pub fn align_right(self, width: impl Into<Length>) -> Self
+pub fn align_top(self, height: impl Into<Length>) -> Self
+pub fn align_bottom(self, height: impl Into<Length>) -> Self
+```
+
+Convenience methods that set size and alignment together.
+
+### Appearance
+
+#### `clip`
+
+```rust
+pub fn clip(self, clip: bool) -> Self
+```
+
+Sets whether the contents should be clipped on overflow.
+
+#### `style`
+
+```rust
+pub fn style(self, style: impl Fn(&Theme) -> Style + 'a) -> Self
+```
+
+Sets a custom style function.
+
+## Style
+
+```rust
+pub struct Style {
+    pub text_color: Option<Color>,
+    pub background: Option<Background>,
+    pub border: Border,
+    pub shadow: Shadow,
+    pub snap: bool,
+}
+```
+
+### Style Builders
+
+```rust
+impl Style {
+    pub fn color(self, color: impl Into<Color>) -> Self
+    pub fn border(self, border: impl Into<Border>) -> Self
+    pub fn background(self, background: impl Into<Background>) -> Self
+    pub fn shadow(self, shadow: impl Into<Shadow>) -> Self
+}
+```
+
+### Built-in Styles
+
+- `transparent` - No background or border
+- `background(color)` - Simple colored background
+- `rounded_box` - Rounded corners with background
+- `bordered_box` - Border with background
+- `primary` - Primary color background
+- `secondary` - Secondary color background
+- `success` - Success/positive color (green)
+- `warning` - Warning color (yellow/orange)
+- `danger` - Danger/error color (red)
+- `dark` - Dark background with white text
+
+## Examples
+
+### Basic Container
+
+```rust
+use iced::widget::container;
+
+container(text("Hello, world!"))
+    .padding(20)
+    .width(Length::Fill)
+    .center_x(Length::Fill)
+```
+
+### Centered Content
+
+```rust
+container(text("Centered"))
+    .center(800)  // 800px wide and tall, centered both ways
+```
+
+### With Background
+
+```rust
+container(text("Colored box"))
+    .padding(10)
+    .style(|_theme| {
+        container::Style::default()
+            .background(Color::from_rgb(0.0, 0.5, 1.0))
+    })
+```
+
+### Using Built-in Styles
+
+```rust
+container(text("Rounded box"))
+    .padding(20)
+    .style(container::rounded_box)
+```
+
+### Custom Alignment
+
+```rust
+// Align content to top-right
+container(text("Top right"))
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .align_x(alignment::Horizontal::Right)
+    .align_y(alignment::Vertical::Top)
+    .padding(10)
+```
+
+### Card-like Container
+
+```rust
+container(
+    column![
+        text("Card Title").size(20),
+        text("Card content goes here"),
+    ]
+    .spacing(10)
+)
+.padding(20)
+.max_width(400)
+.style(|theme| {
+    let palette = theme.extended_palette();
+    
+    container::Style {
+        background: Some(palette.background.weak.color.into()),
+        border: Border {
+            radius: 8.0.into(),
+            width: 1.0,
+            color: palette.background.strong.color,
+        },
+        shadow: Shadow {
+            color: Color::from_rgba(0.0, 0.0, 0.0, 0.1),
+            offset: Vector::new(0.0, 4.0),
+            blur_radius: 8.0,
+        },
+        ..container::Style::default()
+    }
+})
+```
+
+### Clipping Overflow
+
+```rust
+container(
+    text("Very long text that will be clipped...")
+)
+.width(200)
+.height(50)
+.clip(true)  // Prevents content from overflowing
+```
+
+### Status Badge
+
+```rust
+fn status_badge(status: &str, style_fn: fn(&Theme) -> container::Style) -> Element<'_, Message> {
+    container(text(status).size(12))
+        .padding([4, 8])
+        .style(style_fn)
+        .into()
+}
+
+// Usage
+status_badge("Active", container::success)
+status_badge("Error", container::danger)
+status_badge("Pending", container::warning)
+```
+
+### Responsive Centering
+
+```rust
+container(
+    column![
+        text("Welcome").size(32),
+        text("Please sign in"),
+        // Login form here
+    ]
+    .spacing(20)
+    .max_width(400)
+)
+.width(Length::Fill)
+.height(Length::Fill)
+.center_x(Length::Fill)
+.center_y(Length::Fill)
+```
+
+### Gradient Background
+
+```rust
+use iced::gradient;
+
+container(text("Gradient!"))
+    .padding(20)
+    .style(|_theme| {
+        container::Style::default()
+            .background(gradient::Linear::new(0.0)
+                .add_stop(0.0, Color::from_rgb(0.0, 0.5, 1.0))
+                .add_stop(1.0, Color::from_rgb(0.5, 0.0, 1.0)))
+    })
+```
+
+### Sidebar Container
+
+```rust
+container(
+    column![
+        text("Menu").size(20),
+        button("Home"),
+        button("Settings"),
+        button("About"),
+    ]
+    .spacing(10)
+)
+.width(200)
+.height(Length::Fill)
+.padding(20)
+.style(container::dark)
+```
+
+## Use Cases
+
+- **Layout control**: Centering or aligning content
+- **Visual grouping**: Adding backgrounds and borders to group related widgets
+- **Spacing**: Adding padding around content
+- **Responsive design**: Using with `Length::Fill` and max dimensions
+- **Cards and panels**: Creating distinct visual sections
+- **Clipping**: Preventing content overflow
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Scrollable" href="/api/widget/scrollable">
+    For scrollable content
+  </Card>
+  
+  <Card title="Layout Guide" href="/guides/layout">
+    Learn more about layout
+  </Card>
+</CardGroup>

@@ -1,0 +1,426 @@
+---
+title: Scrollable
+description: Widget for displaying scrollable content with scrollbars
+---
+
+The `Scrollable` widget creates a scrollable area that can display content larger than the available space. It provides both vertical and horizontal scrolling with customizable scrollbars.
+
+## Basic Usage
+
+```rust
+use iced::widget::{column, scrollable, space};
+
+fn view(state: &State) -> Element<Message> {
+    scrollable(column![
+        "Scroll me!",
+        space().height(3000),
+        "You did it!",
+    ])
+    .into()
+}
+```
+
+## Builder Methods
+
+### `new(content: impl Into<Element>)`
+
+Creates a new vertical scrollable with the given content.
+
+```rust
+scrollable(column![/* many items */])
+```
+
+### `with_direction(content: impl Into<Element>, direction: Direction)`
+
+Creates a scrollable with specified direction.
+
+```rust
+use iced::widget::scrollable::{Direction, Scrollbar};
+
+scrollable::with_direction(
+    content,
+    Direction::Horizontal(Scrollbar::default())
+)
+```
+
+### `horizontal()`
+
+Makes the scrollable scroll horizontally.
+
+```rust
+scrollable(row![/* wide content */])
+    .horizontal()
+```
+
+### `direction(direction: Direction)`
+
+Sets the scroll direction.
+
+```rust
+use iced::widget::scrollable::{Direction, Scrollbar};
+
+// Vertical and horizontal scrolling
+scrollable(content)
+    .direction(Direction::Both {
+        vertical: Scrollbar::default(),
+        horizontal: Scrollbar::default(),
+    })
+```
+
+### `id(id: widget::Id)`
+
+Sets the widget ID for programmatic control.
+
+```rust
+const SCROLL_ID: &str = "main-scroll";
+
+scrollable(content)
+    .id(SCROLL_ID)
+```
+
+### `width(width: impl Into<Length>)`
+
+Sets the width.
+
+```rust
+scrollable(content).width(Length::Fill)
+```
+
+### `height(height: impl Into<Length>)`
+
+Sets the height.
+
+```rust
+scrollable(content).height(400)
+```
+
+### `on_scroll(callback: impl Fn(Viewport) -> Message)`
+
+Sets a callback for scroll events.
+
+```rust
+scrollable(content)
+    .on_scroll(|viewport| Message::Scrolled(viewport.absolute_offset()))
+```
+
+### `style(style_fn: impl Fn(&Theme, Status) -> Style)`
+
+Applies custom styling.
+
+```rust
+scrollable(content)
+    .style(|theme, status| {
+        scrollable::Style {
+            container: container::Style::default(),
+            scrollbar: scrollable::Scrollbar {
+                background: Some(Color::from_rgb(0.9, 0.9, 0.9).into()),
+                border: Border::rounded(2),
+                scroller: scrollable::Scroller {
+                    color: Color::from_rgb(0.5, 0.5, 0.5),
+                    border: Border::rounded(2),
+                },
+            },
+            gap: None,
+        }
+    })
+```
+
+## Scroll Direction
+
+The `Direction` enum controls scroll behavior:
+
+```rust
+pub enum Direction {
+    Vertical(Scrollbar),      // Vertical only
+    Horizontal(Scrollbar),    // Horizontal only
+    Both {
+        vertical: Scrollbar,
+        horizontal: Scrollbar,
+    },
+}
+```
+
+## Scrollbar Configuration
+
+Customize scrollbar appearance:
+
+```rust
+use iced::widget::scrollable::{Scrollbar, Direction};
+
+scrollable(content)
+    .direction(Direction::Vertical(Scrollbar {
+        width: 10,
+        margin: 5,
+        scroller_width: 10,
+    }))
+```
+
+## Programmatic Scrolling
+
+Control scroll position using commands:
+
+```rust
+use iced::widget::{scrollable, operation};
+use iced::Command;
+
+const SCROLL_ID: &str = "my-scrollable";
+
+// Scroll to top
+fn scroll_to_top() -> Command<Message> {
+    scrollable::scroll_to(
+        scrollable::Id::new(SCROLL_ID),
+        scrollable::AbsoluteOffset { x: 0.0, y: 0.0 },
+    )
+}
+
+// Scroll by relative amount
+fn scroll_down() -> Command<Message> {
+    scrollable::scroll_by(
+        scrollable::Id::new(SCROLL_ID),
+        scrollable::RelativeOffset { x: 0.0, y: 100.0 },
+    )
+}
+```
+
+## Viewport Information
+
+The `Viewport` type provides scroll position information:
+
+```rust
+scrollable(content)
+    .on_scroll(|viewport| {
+        println!("Absolute offset: {:?}", viewport.absolute_offset());
+        println!("Relative offset: {:?}", viewport.relative_offset());
+        println!("Content bounds: {:?}", viewport.content_bounds());
+        Message::Scrolled
+    })
+```
+
+## Examples
+
+### Long List
+
+```rust
+use iced::widget::{button, column, scrollable};
+use iced::Length;
+
+fn item_list(items: &[String]) -> Element<Message> {
+    scrollable(
+        column(
+            items
+                .iter()
+                .enumerate()
+                .map(|(i, item)| {
+                    button(item)
+                        .on_press(Message::ItemClicked(i))
+                        .width(Length::Fill)
+                        .into()
+                })
+                .collect()
+        )
+        .spacing(5)
+        .padding(10)
+    )
+    .height(Length::Fill)
+    .into()
+}
+```
+
+### Horizontal Gallery
+
+```rust
+use iced::widget::{row, scrollable, container};
+use iced::Length;
+
+fn image_gallery(images: &[Element<Message>]) -> Element<Message> {
+    scrollable(
+        row(images.to_vec())
+            .spacing(10)
+            .padding(10)
+    )
+    .direction(Direction::Horizontal(Scrollbar::default()))
+    .width(Length::Fill)
+    .height(300)
+    .into()
+}
+```
+
+### Chat Window
+
+```rust
+use iced::widget::{column, container, scrollable, text};
+use iced::Length;
+
+struct ChatMessage {
+    sender: String,
+    content: String,
+}
+
+fn chat_view(messages: &[ChatMessage]) -> Element<Message> {
+    let scroll_id = "chat-scroll";
+    
+    scrollable(
+        column(
+            messages
+                .iter()
+                .map(|msg| {
+                    container(
+                        column![
+                            text(&msg.sender).size(12),
+                            text(&msg.content),
+                        ]
+                        .spacing(5)
+                    )
+                    .padding(10)
+                    .into()
+                })
+                .collect()
+        )
+        .spacing(10)
+    )
+    .id(scroll_id)
+    .height(Length::Fill)
+    .into()
+}
+
+// Scroll to bottom when new message arrives
+fn update(state: &mut State, message: Message) -> Command<Message> {
+    match message {
+        Message::NewMessage(msg) => {
+            state.messages.push(msg);
+            scrollable::scroll_to(
+                scrollable::Id::new("chat-scroll"),
+                scrollable::AbsoluteOffset { x: 0.0, y: f32::MAX },
+            )
+        }
+        // ...
+    }
+}
+```
+
+### Content with Header
+
+```rust
+use iced::widget::{column, container, scrollable, text};
+use iced::Length;
+
+fn content_page(title: &str, items: Vec<Element<Message>>) -> Element<Message> {
+    column![
+        // Fixed header
+        container(text(title).size(24))
+            .padding(20)
+            .width(Length::Fill),
+        
+        // Scrollable content
+        scrollable(
+            column(items)
+                .spacing(10)
+                .padding(20)
+        )
+        .height(Length::Fill),
+    ]
+    .into()
+}
+```
+
+### Bidirectional Scroll
+
+```rust
+use iced::widget::scrollable::{Direction, Scrollbar};
+
+fn large_table(data: &[[String; 10]]) -> Element<Message> {
+    scrollable(
+        column(
+            data.iter()
+                .map(|row| {
+                    row![
+                        row[0].clone(),
+                        row[1].clone(),
+                        // ... more columns
+                    ]
+                    .spacing(10)
+                    .into()
+                })
+                .collect()
+        )
+        .spacing(5)
+    )
+    .direction(Direction::Both {
+        vertical: Scrollbar::default(),
+        horizontal: Scrollbar::default(),
+    })
+    .width(600)
+    .height(400)
+    .into()
+}
+```
+
+### Infinite Scroll
+
+```rust
+use iced::widget::scrollable;
+
+struct InfiniteList {
+    items: Vec<String>,
+    loading: bool,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Scrolled(Viewport),
+    LoadMore,
+    ItemsLoaded(Vec<String>),
+}
+
+fn view(state: &InfiniteList) -> Element<Message> {
+    scrollable(
+        column(
+            state.items
+                .iter()
+                .map(|item| text(item).into())
+                .collect()
+        )
+        .spacing(10)
+    )
+    .on_scroll(Message::Scrolled)
+    .height(Length::Fill)
+    .into()
+}
+
+fn update(state: &mut InfiniteList, message: Message) -> Command<Message> {
+    match message {
+        Message::Scrolled(viewport) => {
+            let offset = viewport.relative_offset();
+            
+            // Load more when scrolled near bottom
+            if offset.y > 0.9 && !state.loading {
+                state.loading = true;
+                Command::perform(load_more_items(), Message::ItemsLoaded)
+            } else {
+                Command::none()
+            }
+        }
+        Message::ItemsLoaded(items) => {
+            state.items.extend(items);
+            state.loading = false;
+            Command::none()
+        }
+        // ...
+    }
+}
+```
+
+## Tips and Best Practices
+
+1. **Set explicit height** - Scrollables need a constrained height to work
+2. **Use `Length::Fill`** - Let scrollable take available space
+3. **ID for programmatic control** - Set an ID if you need to scroll programmatically
+4. **Optimize content** - Avoid rendering too many items at once
+5. **Smooth scrolling** - Use `on_scroll` sparingly for performance
+6. **Consider direction** - Choose appropriate scroll direction for your content
+
+## Related Widgets
+
+- [Column](/widgets/row-and-column) - Often used as scrollable content
+- [Container](/widgets/container) - For content styling
+- [List widgets](/widgets/all-widgets) - For structured data display

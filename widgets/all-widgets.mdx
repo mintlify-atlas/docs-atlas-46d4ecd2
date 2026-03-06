@@ -1,0 +1,564 @@
+---
+title: Complete Widget Reference
+description: Comprehensive reference of all available widgets in Iced
+---
+
+This page provides a complete reference of all widgets available in Iced, organized by category.
+
+## Layout Widgets
+
+Widgets for arranging and organizing other widgets.
+
+### Row
+
+**Module:** `iced::widget::row`
+
+Distributes children horizontally.
+
+```rust
+row![item1, item2, item3].spacing(10)
+```
+
+[Read more →](/widgets/row-and-column)
+
+### Column
+
+**Module:** `iced::widget::column`
+
+Distributes children vertically.
+
+```rust
+column![item1, item2, item3].spacing(10)
+```
+
+[Read more →](/widgets/row-and-column)
+
+### Container
+
+**Module:** `iced::widget::container`
+
+Wraps a single child with padding, alignment, and styling.
+
+```rust
+container(content).padding(20).center(Length::Fill)
+```
+
+[Read more →](/widgets/container)
+
+### Scrollable
+
+**Module:** `iced::widget::scrollable`
+
+Provides scrollable content with scrollbars.
+
+```rust
+scrollable(column![/* many items */]).height(Length::Fill)
+```
+
+[Read more →](/widgets/scrollable)
+
+### Stack
+
+**Module:** `iced::widget::stack` (via macro)
+
+Layers children on top of each other.
+
+```rust
+stack![background, foreground, overlay]
+```
+
+### Grid
+
+**Module:** `iced::widget::grid` (via macro)
+
+Arranges children in a grid layout.
+
+```rust
+grid![item1, item2, item3].spacing(10)
+```
+
+### Float
+
+**Module:** `iced::widget::float`
+
+Positions an element floating over another.
+
+```rust
+Float::new(base_element, floating_element)
+    .offset([10.0, 10.0])
+```
+
+### Space
+
+**Module:** `iced::widget::space`
+
+Creates empty space for layout purposes.
+
+```rust
+space().width(Length::Fill)  // Horizontal spacer
+space().height(100)           // Vertical space
+```
+
+## Input Widgets
+
+Widgets for user interaction and input.
+
+### Button
+
+**Module:** `iced::widget::button`
+
+Clickable button that produces messages.
+
+```rust
+button("Click me").on_press(Message::Clicked)
+```
+
+[Read more →](/widgets/button)
+
+### TextInput
+
+**Module:** `iced::widget::text_input`
+
+Single-line text input field.
+
+```rust
+text_input("Placeholder", &value).on_input(Message::Changed)
+```
+
+[Read more →](/widgets/text-input)
+
+### TextEditor
+
+**Module:** `iced::widget::text_editor`
+
+Multi-line text editor with advanced features.
+
+```rust
+text_editor(&content)
+    .on_action(Message::EditorAction)
+    .height(Length::Fill)
+```
+
+### Checkbox
+
+**Module:** `iced::widget::checkbox`
+
+Boolean checkbox input.
+
+```rust
+checkbox("Accept terms", is_checked)
+    .on_toggle(Message::CheckboxToggled)
+```
+
+### Radio
+
+**Module:** `iced::widget::radio`
+
+Radio button for selecting one option from a group.
+
+```rust
+radio("Option A", OptionA, Some(selected), Message::OptionSelected)
+```
+
+### Toggler
+
+**Module:** `iced::widget::toggler`
+
+Toggle switch for boolean values.
+
+```rust
+toggler(is_enabled)
+    .label("Enable feature")
+    .on_toggle(Message::Toggled)
+```
+
+### Slider
+
+**Module:** `iced::widget::slider`
+
+Horizontal slider for selecting numeric values.
+
+```rust
+slider(0.0..=100.0, value, Message::SliderChanged)
+```
+
+### VerticalSlider
+
+**Module:** `iced::widget::vertical_slider`
+
+Vertical slider for selecting numeric values.
+
+```rust
+vertical_slider(0.0..=100.0, value, Message::Changed)
+    .height(200)
+```
+
+### PickList
+
+**Module:** `iced::widget::pick_list`
+
+Dropdown selection list.
+
+```rust
+pick_list(
+    vec!["Option 1", "Option 2", "Option 3"],
+    Some(selected),
+    Message::OptionSelected
+)
+```
+
+### ComboBox
+
+**Module:** `iced::widget::combo_box`
+
+Searchable dropdown with text input.
+
+```rust
+combo_box(&state, "Search...", &selection, Message::Selected)
+    .on_input(Message::InputChanged)
+```
+
+## Display Widgets
+
+Widgets for displaying content.
+
+### Text
+
+**Module:** `iced::widget::text`
+
+Displays styled text.
+
+```rust
+text("Hello, Iced!").size(20).color(color!(0x0000ff))
+```
+
+[Read more →](/widgets/text)
+
+### Image
+
+**Module:** `iced::widget::image` (feature: `image`)
+
+Displays raster images.
+
+```rust
+image("path/to/image.png")
+    .width(Length::Fill)
+    .height(Length::Fill)
+```
+
+### Svg
+
+**Module:** `iced::widget::svg` (feature: `svg`)
+
+Renders SVG vector graphics.
+
+```rust
+svg("path/to/image.svg")
+    .width(100)
+    .height(100)
+```
+
+### ProgressBar
+
+**Module:** `iced::widget::progress_bar`
+
+Displays progress as a bar.
+
+```rust
+progress_bar(0.0..=100.0, 45.0)
+```
+
+### Rule
+
+**Module:** `iced::widget::rule`
+
+Draws horizontal or vertical lines.
+
+```rust
+Rule::horizontal(10)  // Horizontal line with padding
+Rule::vertical(10)    // Vertical line
+```
+
+### QRCode
+
+**Module:** `iced::widget::qr_code` (feature: `qr_code`)
+
+Generates and displays QR codes.
+
+```rust
+qr_code("https://example.com")
+    .cell_size(4)
+```
+
+## Advanced Widgets
+
+Specialized widgets for complex use cases.
+
+### Canvas
+
+**Module:** `iced::widget::canvas` (feature: `canvas`)
+
+Custom 2D graphics drawing.
+
+```rust
+canvas(MyCanvasProgram::new())
+    .width(Length::Fill)
+    .height(Length::Fill)
+```
+
+[Read more →](/widgets/canvas)
+
+### Shader
+
+**Module:** `iced::widget::shader` (feature: `wgpu`)
+
+Custom shader rendering.
+
+```rust
+shader(my_shader_program)
+    .width(Length::Fill)
+    .height(Length::Fill)
+```
+
+### PaneGrid
+
+**Module:** `iced::widget::pane_grid`
+
+Resizable pane layout.
+
+```rust
+pane_grid(&state, |pane, content, is_maximized| {
+    pane_grid::Content::new(content)
+        .title_bar(pane_grid::TitleBar::new(format!("Pane {}", pane)))
+})
+```
+
+### Table
+
+**Module:** `iced::widget::table`
+
+Displays tabular data.
+
+```rust
+table(&state, headers, |row_index, column_index| {
+    text(format!("Cell {},{}", row_index, column_index)).into()
+})
+```
+
+### Tooltip
+
+**Module:** `iced::widget::tooltip`
+
+Adds hover tooltips to widgets.
+
+```rust
+tooltip(
+    button("Hover me"),
+    "This is a tooltip",
+    tooltip::Position::Bottom
+)
+```
+
+### MouseArea
+
+**Module:** `iced::widget::mouse_area`
+
+Captures mouse events on an area.
+
+```rust
+mouse_area(content)
+    .on_press(Message::Pressed)
+    .on_release(Message::Released)
+    .on_enter(Message::Entered)
+    .on_exit(Message::Exited)
+```
+
+### Responsive
+
+**Module:** `iced::widget::responsive`
+
+Creates responsive layouts based on available space.
+
+```rust
+responsive(|size| {
+    if size.width > 600.0 {
+        wide_layout().into()
+    } else {
+        narrow_layout().into()
+    }
+})
+```
+
+### Markdown
+
+**Module:** `iced::widget::markdown` (feature: `markdown`)
+
+Renders Markdown content.
+
+```rust
+markdown(
+    &items,
+    markdown::Settings::default(),
+    markdown::Style::from_palette(theme.palette())
+)
+```
+
+### Sensor
+
+**Module:** `iced::widget::sensor`
+
+Detects layout changes.
+
+```rust
+sensor(content)
+    .on_resize(|size| Message::Resized(size))
+```
+
+### Themer
+
+**Module:** `iced::widget::themer`
+
+Applies custom themes to children.
+
+```rust
+themer(custom_theme, content)
+```
+
+### Pin
+
+**Module:** `iced::widget::pin`
+
+Pins a widget to prevent it from being dropped.
+
+```rust
+Pin::new(widget)
+```
+
+## Lazy Widgets
+
+**Feature:** `lazy`
+
+Lazy widgets defer computation until needed.
+
+### lazy
+
+Creates a lazy widget that only computes its view when dependencies change.
+
+```rust
+lazy(dependencies, |deps| expensive_view(deps))
+```
+
+### lazy_responsive
+
+Combines lazy evaluation with responsive layout.
+
+```rust
+lazy_responsive(dependencies, |deps, size| {
+    expensive_responsive_view(deps, size)
+})
+```
+
+## Keyed Widgets
+
+**Module:** `iced::widget::keyed`
+
+Keyed variants preserve widget state based on keys.
+
+### keyed_column
+
+Column that preserves child state using keys.
+
+```rust
+keyed_column(
+    items.iter().map(|item| {
+        (item.id, view_item(item).into())
+    })
+)
+```
+
+## Helper Functions
+
+These are found in `iced::widget`:
+
+### text!
+
+Formats text like `format!` macro.
+
+```rust
+text!("Count: {}", count)
+```
+
+### row!
+
+Creates a row with the given children.
+
+```rust
+row![child1, child2, child3]
+```
+
+### column!
+
+Creates a column with the given children.
+
+```rust
+column![child1, child2, child3]
+```
+
+### stack!
+
+Creates a stack with the given children.
+
+```rust
+stack![background, content, overlay]
+```
+
+### grid!
+
+Creates a grid with the given children.
+
+```rust
+grid![cell1, cell2, cell3]
+```
+
+## Widget Categories by Use Case
+
+### Forms
+- TextInput, TextEditor
+- Button
+- Checkbox, Radio, Toggler
+- Slider, VerticalSlider
+- PickList, ComboBox
+
+### Navigation
+- Button
+- PickList
+- PaneGrid
+- Scrollable
+
+### Data Display
+- Text
+- Table
+- ProgressBar
+- Canvas (for charts)
+- Markdown
+
+### Media
+- Image
+- Svg
+- Canvas
+- Shader
+
+### Layout
+- Row, Column
+- Container
+- Stack
+- Grid
+- Scrollable
+- PaneGrid
+
+## Next Steps
+
+- Explore individual [widget pages](/widgets/overview) for detailed documentation
+- Learn about [styling and theming](/guides/styling)
+- Check out [layout patterns](/guides/layout)
+- Browse [example applications](https://github.com/iced-rs/iced/tree/master/examples)

@@ -1,0 +1,249 @@
+---
+title: Layout
+description: Learn how to arrange widgets using rows, columns, and containers in Iced
+---
+
+Iced doesn't have a unified layout system. Instead, each widget implements its own layout strategy. Building layouts typically involves combining **rows**, **columns**, and **containers**.
+
+## Basic Layout Widgets
+
+### Rows
+
+Rows lay out widgets horizontally from left to right:
+
+```rust
+use iced::widget::row;
+use iced::Element;
+
+fn view(state: &State) -> Element<'_, Message> {
+    row![
+        "Left",
+        square(50),
+        square(50),
+        "Right"
+    ]
+    .spacing(10)
+    .into()
+}
+```
+
+### Columns
+
+Columns lay out widgets vertically from top to bottom:
+
+```rust
+use iced::widget::column;
+use iced::Element;
+
+fn view(state: &State) -> Element<'_, Message> {
+    column![
+        "Top",
+        square(50),
+        square(50),
+        "Bottom"
+    ]
+    .spacing(10)
+    .into()
+}
+```
+
+### Containers
+
+Containers position or align a single widget inside their bounds:
+
+```rust
+use iced::widget::container;
+use iced::{Fill, Element};
+
+fn view(state: &State) -> Element<'_, Message> {
+    container("Centered content")
+        .padding(20)
+        .center_x(Fill)
+        .center_y(Fill)
+        .into()
+}
+```
+
+## Spacing
+
+Both rows and columns support spacing between elements:
+
+```rust
+column![
+    "First item",
+    "Second item",
+    "Third item"
+]
+.spacing(20)  // 20 pixels between each item
+```
+
+## Length Types
+
+The width and height of widgets can be defined using a `Length`:
+
+### Fill
+
+`Fill` makes the widget take all available space in a given axis:
+
+```rust
+use iced::Fill;
+
+container("I fill the space!")
+    .width(Fill)
+    .height(Fill)
+```
+
+### Shrink
+
+`Shrink` makes the widget use its intrinsic size:
+
+```rust
+use iced::Shrink;
+
+container("I'm only as big as I need to be")
+    .width(Shrink)
+    .height(Shrink)
+```
+
+<Note>
+Most widgets use a `Shrink` sizing strategy by default, but will inherit a `Fill` strategy from their children.
+</Note>
+
+### Fixed Pixels
+
+You can also specify an exact size in pixels:
+
+```rust
+container("I am exactly 300px tall!")
+    .height(300)
+```
+
+## Complete Layout Example
+
+Here's a complete application layout combining rows, columns, and containers:
+
+```rust
+use iced::widget::{column, container, row, scrollable, space};
+use iced::{Fill, Element, Center};
+
+fn view(state: &State) -> Element<'_, Message> {
+    // Header
+    let header = container(
+        row![
+            square(40),
+            space::horizontal(),
+            "Header!",
+            space::horizontal(),
+            square(40),
+        ]
+        .padding(10)
+        .align_y(Center),
+    )
+    .style(|theme| {
+        let palette = theme.extended_palette();
+        container::Style::default()
+            .border(border::color(palette.background.strong.color).width(1))
+    });
+
+    // Sidebar
+    let sidebar = container(
+        column![
+            "Sidebar!",
+            square(50),
+            square(50)
+        ]
+        .spacing(40)
+        .padding(10)
+        .width(200)
+        .align_x(Center),
+    )
+    .style(container::rounded_box);
+
+    // Main content
+    let content = container(
+        scrollable(
+            column![
+                "Content!",
+                row((1..10).map(|i| square(80)))
+                    .spacing(20)
+                    .align_y(Center)
+                    .wrap(),
+                "The end"
+            ]
+            .spacing(40)
+            .align_x(Center)
+            .width(Fill),
+        )
+        .height(Fill),
+    )
+    .padding(10);
+
+    // Combine everything
+    column![
+        header,
+        row![sidebar, content]
+    ].into()
+}
+```
+
+## Responsive Layouts
+
+The `responsive` widget allows you to create layouts that adapt to available space:
+
+```rust
+use iced::widget::responsive;
+
+responsive(|size| {
+    container(center(
+        text!("{}x{}px", size.width, size.height)
+            .font(Font::MONOSPACE)
+    ))
+    .width(size.width / 4.0)
+    .height(size.width / 4.0)
+    .style(container::bordered_box)
+    .into()
+})
+```
+
+## Pinning
+
+The `pin` widget positions a widget at fixed coordinates inside another widget:
+
+```rust
+use iced::widget::{pin, stack};
+
+stack![
+    container(pin("• (50, 50)").x(50).y(50))
+        .width(500)
+        .height(500)
+        .style(container::bordered_box),
+    pin("• (300, 300)").x(300).y(300),
+]
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use spacing consistently">
+    Define standard spacing values (e.g., 10, 20, 40) and use them throughout your application for visual consistency.
+  </Accordion>
+
+  <Accordion title="Prefer Fill for containers">
+    When creating application shells, use `Fill` for main containers to ensure they take up available space.
+  </Accordion>
+
+  <Accordion title="Use center for simple centering">
+    The `center` widget is a shorthand for a container with both `center_x` and `center_y`.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Styling" icon="paintbrush" href="/guides/styling">
+    Learn how to style your widgets
+  </Card>
+  <Card title="Theming" icon="palette" href="/guides/theming">
+    Customize your application's appearance
+  </Card>
+</CardGroup>

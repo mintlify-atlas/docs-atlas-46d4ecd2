@@ -1,0 +1,346 @@
+---
+title: 'Text Input'
+description: 'A field for entering and editing text'
+---
+
+## Overview
+
+A `TextInput` is a field that can be filled with text. It supports features like placeholders, password mode, text selection, clipboard operations, and input method editors (IMEs).
+
+## Constructor
+
+### `text_input::TextInput::new`
+
+```rust
+pub fn new(placeholder: &str, value: &str) -> Self
+```
+
+Creates a new `TextInput` with the given placeholder and current value.
+
+**Parameters:**
+- `placeholder` - Text shown when the input is empty
+- `value` - The current text content
+
+**Default padding:** 5.0 pixels on all sides
+
+## Builder Methods
+
+### Identity
+
+#### `id`
+
+```rust
+pub fn id(self, id: impl Into<widget::Id>) -> Self
+```
+
+Sets a unique identifier for the text input (useful for focus management).
+
+### Security
+
+#### `secure`
+
+```rust
+pub fn secure(self, is_secure: bool) -> Self
+```
+
+Converts the text input into a secure password field. When enabled, the content is masked.
+
+### Event Handlers
+
+#### `on_input`
+
+```rust
+pub fn on_input(self, on_input: impl Fn(String) -> Message + 'a) -> Self
+```
+
+Sets the message produced when text is typed. If not called, the text input will be disabled.
+
+#### `on_input_maybe`
+
+```rust
+pub fn on_input_maybe(
+    self,
+    on_input: Option<impl Fn(String) -> Message + 'a>
+) -> Self
+```
+
+Conditionally sets the input handler. If `None`, the text input will be disabled.
+
+#### `on_submit`
+
+```rust
+pub fn on_submit(self, message: Message) -> Self
+```
+
+Sets the message produced when the Enter key is pressed while the input is focused.
+
+#### `on_submit_maybe`
+
+```rust
+pub fn on_submit_maybe(self, on_submit: Option<Message>) -> Self
+```
+
+Conditionally sets the submit handler.
+
+#### `on_paste`
+
+```rust
+pub fn on_paste(self, on_paste: impl Fn(String) -> Message + 'a) -> Self
+```
+
+Sets the message produced when text is pasted into the input.
+
+#### `on_paste_maybe`
+
+```rust
+pub fn on_paste_maybe(
+    self,
+    on_paste: Option<impl Fn(String) -> Message + 'a>
+) -> Self
+```
+
+Conditionally sets the paste handler.
+
+### Layout
+
+#### `width`
+
+```rust
+pub fn width(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width of the text input. Default is `Length::Fill`.
+
+#### `padding`
+
+```rust
+pub fn padding<P: Into<Padding>>(self, padding: P) -> Self
+```
+
+Sets the padding of the text input.
+
+### Text Styling
+
+#### `size`
+
+```rust
+pub fn size(self, size: impl Into<Pixels>) -> Self
+```
+
+Sets the text size.
+
+#### `line_height`
+
+```rust
+pub fn line_height(self, line_height: impl Into<text::LineHeight>) -> Self
+```
+
+Sets the line height.
+
+#### `font`
+
+```rust
+pub fn font(self, font: Renderer::Font) -> Self
+```
+
+Sets the font.
+
+#### `align_x`
+
+```rust
+pub fn align_x(self, alignment: impl Into<alignment::Horizontal>) -> Self
+```
+
+Sets the horizontal alignment of the text (Left, Center, or Right).
+
+### Icon
+
+#### `icon`
+
+```rust
+pub fn icon(self, icon: Icon<Renderer::Font>) -> Self
+```
+
+Sets an icon to display inside the text input.
+
+```rust
+pub struct Icon<Font> {
+    pub font: Font,
+    pub code_point: char,
+    pub size: Option<Pixels>,
+    pub spacing: f32,
+    pub side: Side,  // Left or Right
+}
+```
+
+### Appearance
+
+#### `style`
+
+```rust
+pub fn style(self, style: impl Fn(&Theme, Status) -> Style + 'a) -> Self
+```
+
+Sets a custom style function.
+
+## Status
+
+```rust
+pub enum Status {
+    Active,
+    Hovered,
+    Focused { is_hovered: bool },
+    Disabled,
+}
+```
+
+## Style
+
+```rust
+pub struct Style {
+    pub background: Background,
+    pub border: Border,
+    pub icon: Color,
+    pub placeholder: Color,
+    pub value: Color,
+    pub selection: Color,
+}
+```
+
+## Examples
+
+### Basic Text Input
+
+```rust
+use iced::widget::text_input;
+
+struct State {
+   content: String,
+}
+
+enum Message {
+    ContentChanged(String),
+}
+
+fn view(state: &State) -> Element<'_, Message> {
+    text_input("Type something here...", &state.content)
+        .on_input(Message::ContentChanged)
+        .into()
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::ContentChanged(content) => {
+            state.content = content;
+        }
+    }
+}
+```
+
+### Password Input
+
+```rust
+text_input("Password", &state.password)
+    .secure(true)
+    .on_input(Message::PasswordChanged)
+    .on_submit(Message::Login)
+```
+
+### With Submit Handler
+
+```rust
+text_input("Search...", &state.query)
+    .on_input(Message::QueryChanged)
+    .on_submit(Message::Search)
+    .width(Length::Fill)
+```
+
+### Custom Width and Padding
+
+```rust
+text_input("Name", &state.name)
+    .on_input(Message::NameChanged)
+    .width(300)
+    .padding(15)
+    .size(18)
+```
+
+### With Icon
+
+```rust
+use iced::widget::text_input;
+
+text_input("Search...", &state.search)
+    .on_input(Message::SearchChanged)
+    .icon(text_input::Icon {
+        font: ICON_FONT,
+        code_point: '🔍',
+        size: None,
+        spacing: 10.0,
+        side: text_input::Side::Left,
+    })
+```
+
+### Validation with Conditional Enable
+
+```rust
+let is_valid = !state.email.is_empty() && state.email.contains('@');
+
+column![
+    text_input("Email", &state.email)
+        .on_input(Message::EmailChanged),
+    
+    button("Submit")
+        .on_press_maybe(is_valid.then(|| Message::Submit))
+]
+```
+
+### Disabled State
+
+```rust
+// No on_input handler = disabled
+text_input("Read-only", &state.readonly_value)
+```
+
+### With Paste Handler
+
+```rust
+text_input("Paste here", &state.content)
+    .on_input(Message::ContentChanged)
+    .on_paste(|text| Message::Pasted(text))
+```
+
+## Keyboard Shortcuts
+
+The text input supports standard keyboard shortcuts:
+
+- **Ctrl+C / Cmd+C** - Copy selected text
+- **Ctrl+X / Cmd+X** - Cut selected text
+- **Ctrl+V / Cmd+V** - Paste from clipboard
+- **Ctrl+A / Cmd+A** - Select all text
+- **Arrow keys** - Move cursor
+- **Shift+Arrow** - Select text
+- **Ctrl+Arrow / Cmd+Arrow** - Jump by words
+- **Home/End** - Jump to start/end
+- **Backspace/Delete** - Delete characters
+
+## State Management
+
+The text input maintains internal state for:
+
+- Cursor position and selection
+- Scroll offset (for text longer than the input)
+- Focus state
+- Input method editor (IME) state for complex character input
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Button" href="/api/widget/button">
+    For form submission
+  </Card>
+  
+  <Card title="Checkbox" href="/api/widget/checkbox">
+    For binary choices in forms
+  </Card>
+</CardGroup>

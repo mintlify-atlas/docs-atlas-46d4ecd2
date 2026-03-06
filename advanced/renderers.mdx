@@ -1,0 +1,228 @@
+---
+title: Renderer Architecture
+description: Understanding Iced's renderer-agnostic architecture and available rendering backends
+---
+
+Iced features a **renderer-agnostic architecture** that separates the GUI logic from the rendering implementation. This design allows you to choose the best renderer for your use case or even create custom renderers.
+
+## Architecture Overview
+
+Iced's rendering architecture is built on trait-based abstractions that decouple the widget layer from the actual drawing operations:
+
+```rust
+pub trait Renderer {
+    fn fill_quad(&mut self, quad: Quad, background: impl Into<Background>);
+    fn start_layer(&mut self, bounds: Rectangle);
+    fn end_layer(&mut self);
+    fn start_transformation(&mut self, transformation: Transformation);
+    fn end_transformation(&mut self);
+    // ... more methods
+}
+```
+
+This architecture allows widgets to be written once and work with any renderer implementation.
+
+## Available Renderers
+
+### wgpu (GPU-Accelerated)
+
+The `wgpu` renderer is the default GPU-accelerated backend that provides high performance on modern graphics hardware.
+
+**Backends Supported:**
+- Vulkan (Linux, Windows, Android)
+- Metal (macOS, iOS)
+- DirectX 12 (Windows)
+- DirectX 11 (Windows)
+- OpenGL (Linux, Windows, macOS - legacy)
+- WebGPU (Web)
+
+**Features:**
+- Hardware-accelerated rendering
+- Triangle meshes for custom geometry
+- Custom shaders via the `Primitive` trait
+- MSAA antialiasing (2x, 4x, 8x, 16x)
+- Image and SVG support
+- GPU-accelerated text rendering via glyphon
+
+**Enable in Cargo.toml:**
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["wgpu"] }
+```
+
+### tiny-skia (Software Rendering)
+
+The `tiny-skia` renderer is a CPU-based software renderer that provides portability and consistency across platforms.
+
+**Features:**
+- Pure CPU rendering (no GPU required)
+- Consistent output across all platforms
+- Lower memory footprint
+- Works in environments without GPU access
+- Image and SVG support
+
+**Limitations:**
+- No custom shader support
+- No mesh rendering
+- Lower performance for complex scenes
+
+**Enable in Cargo.toml:**
+```toml
+[dependencies]
+iced = { version = "0.15", features = ["tiny-skia"] }
+```
+
+## Fallback Renderer
+
+Iced supports a **fallback renderer strategy** that automatically chooses the best available renderer at runtime:
+
+```rust
+// When both renderers are enabled
+iced = { version = "0.15", features = ["wgpu", "tiny-skia"] }
+```
+
+The fallback mechanism:
+1. Attempts to initialize `wgpu` first
+2. Falls back to `tiny-skia` if GPU initialization fails
+3. Provides seamless degradation for compatibility
+
+This is implemented via the `fallback::Renderer` and `fallback::Compositor` types:
+
+```rust
+pub enum Renderer<A, B> {
+    Primary(A),    // wgpu
+    Secondary(B),  // tiny-skia
+}
+```
+
+## Backend Selection
+
+You can control which backend to use via environment variables:
+
+```bash
+# Force wgpu backend
+ICED_BACKEND=wgpu cargo run
+
+# Force tiny-skia backend
+ICED_BACKEND=tiny-skia cargo run
+
+# Try multiple backends in order
+ICED_BACKEND=wgpu,tiny-skia cargo run
+```
+
+For wgpu specifically, you can also control which graphics API is used:
+
+```bash
+# Force Vulkan
+WGPU_BACKEND=vulkan cargo run
+
+# Force Metal (macOS)
+WGPU_BACKEND=metal cargo run
+
+# Force DirectX 12
+WGPU_BACKEND=dx12 cargo run
+```
+
+## Renderer Traits
+
+The core renderer traits that backends must implement:
+
+### Core Renderer Trait
+
+```rust
+pub trait Renderer {
+    fn fill_quad(&mut self, quad: Quad, background: impl Into<Background>);
+    fn start_layer(&mut self, bounds: Rectangle);
+    fn end_layer(&mut self);
+    // ... transformation, hints, etc.
+}
+```
+
+### Text Renderer Trait
+
+```rust
+pub trait text::Renderer: Renderer {
+    type Font;
+    type Paragraph;
+    type Editor;
+    
+    fn fill_paragraph(&mut self, text: &Paragraph, position: Point, color: Color);
+    fn fill_editor(&mut self, editor: &Editor, position: Point, color: Color);
+    // ...
+}
+```
+
+### Image Renderer Trait
+
+```rust
+pub trait image::Renderer: Renderer {
+    type Handle;
+    
+    fn load_image(&self, handle: &Handle) -> Result<Allocation, Error>;
+    fn measure_image(&self, handle: &Handle) -> Option<Size<u32>>;
+    fn draw_image(&mut self, image: Image, bounds: Rectangle);
+}
+```
+
+### Geometry Renderer Trait
+
+```rust
+pub trait geometry::Renderer: Renderer {
+    type Geometry;
+    type Frame;
+    
+    fn new_frame(&self, bounds: Rectangle) -> Self::Frame;
+    fn draw_geometry(&mut self, geometry: Self::Geometry);
+}
+```
+
+## Choosing a Renderer
+
+**Use wgpu when:**
+- You need high performance
+- Your application has complex animations
+- You want to use custom shaders
+- GPU is available on target platforms
+- You're building games or data visualizations
+
+**Use tiny-skia when:**
+- You need guaranteed software rendering
+- Running in headless environments
+- GPU is not available or unreliable
+- You need consistent rendering output
+- Memory footprint is a concern
+
+**Use both (fallback) when:**
+- You want maximum compatibility
+- You're distributing to unknown environments
+- You want automatic graceful degradation
+- Both features can be included in your binary
+
+## Headless Rendering
+
+Both renderers support headless (offscreen) rendering for testing and server-side rendering:
+
+```rust
+use iced::Renderer;
+use iced::Size;
+
+// Create headless renderer
+let renderer = Renderer::new(
+    Font::default(),
+    Pixels(16.0),
+    Some("wgpu") // or "tiny-skia"
+).await?;
+
+// Take screenshot
+let pixels = renderer.screenshot(
+    Size::new(800, 600),
+    1.0, // scale factor
+    Color::WHITE // background
+);
+```
+
+## Next Steps
+
+- Learn about [Custom Renderers](/advanced/custom-renderers) to create your own backend
+- Explore [Performance](/advanced/performance) optimization techniques
+- Check out [Debugging](/advanced/debugging) tools for renderer development

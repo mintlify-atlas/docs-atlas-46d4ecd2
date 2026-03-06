@@ -1,0 +1,102 @@
+---
+title: Core Overview
+description: The core library of the Iced GUI framework
+---
+
+The `iced_core` library holds basic types that can be reused and re-exported in different runtime implementations. It provides the fundamental building blocks for creating Iced applications.
+
+## Module Structure
+
+The core library is organized into the following key modules:
+
+### Layout and Positioning
+- **alignment** - Align and position widgets
+- **layout** - Layout computation
+- **padding** - Padding configuration
+- **length** - Space filling strategies
+
+### Rendering
+- **renderer** - Renderer abstraction
+- **element** - Generic widget wrapper
+- **widget** - Widget trait and types
+- **overlay** - Overlay rendering
+
+### Styling
+- **color** - sRGB color representation
+- **background** - Background styles
+- **border** - Border configuration
+- **shadow** - Shadow effects
+- **theme** - Theming support
+
+### Input Handling
+- **event** - Event types
+- **keyboard** - Keyboard input
+- **mouse** - Mouse interaction
+- **touch** - Touch input
+
+### Graphics Primitives
+- **font** - Font configuration
+- **text** - Text rendering
+- **image** - Image rendering
+- **svg** - SVG rendering
+- **gradient** - Gradient effects
+
+### Geometry
+- **point** - 2D points
+- **vector** - 2D vectors
+- **rectangle** - Rectangles
+- **size** - Size representation
+- **transformation** - Geometric transformations
+- **rotation** - Rotation angles
+
+## Key Types
+
+The most commonly used core types include:
+
+- [`Element`](/api/core/element) - A generic widget wrapper
+- [`Alignment`](/api/core/alignment) - Alignment configuration
+- [`Length`](/api/core/length) - Space filling strategies
+- [`Color`](/api/core/color) - sRGB color representation
+- `Widget` - The base widget trait
+- `Renderer` - The renderer trait
+- `Theme` - Theming configuration
+
+## Utility Traits
+
+### Function Trait
+
+The `Function` trait is a trait extension for binary functions that enables functional programming paradigms:
+
+```rust
+pub trait Function<A, B, O> {
+    fn with(self, prefix: A) -> impl Fn(B) -> O;
+}
+```
+
+This trait allows you to partially apply the first argument of a binary function, which is particularly useful when working with messages in Iced:
+
+```rust
+use iced_core::Function;
+
+enum Message {
+    ButtonPressed(usize, String)
+}
+
+// Instead of:
+element.map(move |result| Message::ButtonPressed(id, result))
+
+// You can write:
+element.map(Message::ButtonPressed.with(id))
+```
+
+## Never Type
+
+The `never` function is used to coerce the `Never` type (an alias for `std::convert::Infallible`) into any type:
+
+```rust
+pub fn never<T>(never: Never) -> T {
+    match never {}
+}
+```
+
+This is useful when working with generic types that can never be instantiated.

@@ -1,0 +1,395 @@
+---
+title: Built-in Themes
+description: All built-in theme variants available in Iced
+---
+
+# Built-in Themes
+
+Iced provides 22 built-in theme variants that you can use out of the box. Each theme includes a carefully crafted color palette and extended color variations.
+
+## Default Themes
+
+### Light
+
+```rust
+Theme::Light
+```
+
+The default light theme with a clean, bright appearance.
+
+- **Background:** `#FFFFFF`
+- **Text:** `#000000`
+- **Primary:** `#5865F2`
+- **Success:** `#12664F`
+- **Warning:** `#B77E33`
+- **Danger:** `#C3423F`
+
+### Dark
+
+```rust
+Theme::Dark
+```
+
+The default dark theme with a modern, low-contrast look.
+
+- **Background:** `#2B2D31`
+- **Text:** `#E6E6E6`
+- **Primary:** `#5865F2`
+- **Success:** `#12664F`
+- **Warning:** `#FFC14E`
+- **Danger:** `#C3423F`
+
+## Popular Themes
+
+### Dracula
+
+```rust
+Theme::Dracula
+```
+
+The iconic [Dracula](https://draculatheme.com) color scheme with vibrant purples and greens.
+
+- **Background:** `#282A36`
+- **Text:** `#F8F8F2`
+- **Primary:** `#BD93F9` (Purple)
+- **Success:** `#50FA7B` (Green)
+- **Warning:** `#F1FA8C` (Yellow)
+- **Danger:** `#FF5555` (Red)
+
+### Nord
+
+```rust
+Theme::Nord
+```
+
+The [Nord](https://www.nordtheme.com) arctic, north-bluish color palette.
+
+- **Background:** `#2E3440`
+- **Text:** `#ECEFF4`
+- **Primary:** `#8FBCBB`
+- **Success:** `#A3BE8C`
+- **Warning:** `#EBCB8B`
+- **Danger:** `#BF616A`
+
+## Solarized
+
+### Solarized Light
+
+```rust
+Theme::SolarizedLight
+```
+
+The light variant of [Solarized](https://ethanschoonover.com/solarized), designed for precision colors and reducing eye strain.
+
+- **Background:** `#FDF6E3`
+- **Text:** `#657B83`
+- **Primary:** `#2AA198` (Cyan)
+- **Success:** `#859900` (Green)
+- **Warning:** `#B58900` (Yellow)
+- **Danger:** `#DC322F` (Red)
+
+### Solarized Dark
+
+```rust
+Theme::SolarizedDark
+```
+
+The dark variant of Solarized.
+
+- **Background:** `#002B36`
+- **Text:** `#839496`
+- **Primary:** `#2AA198` (Cyan)
+- **Success:** `#859900` (Green)
+- **Warning:** `#B58900` (Yellow)
+- **Danger:** `#DC322F` (Red)
+
+## Gruvbox
+
+### Gruvbox Light
+
+```rust
+Theme::GruvboxLight
+```
+
+The light variant of [Gruvbox](https://github.com/morhetz/gruvbox) with retro groove colors.
+
+- **Background:** `#FBF1C7`
+- **Text:** `#282828`
+- **Primary:** `#458588` (Blue)
+- **Success:** `#98971A` (Green)
+- **Warning:** `#D79921` (Yellow)
+- **Danger:** `#CC241D` (Red)
+
+### Gruvbox Dark
+
+```rust
+Theme::GruvboxDark
+```
+
+The dark variant of Gruvbox.
+
+- **Background:** `#282828`
+- **Text:** `#FBF1C7`
+- **Primary:** `#458588` (Blue)
+- **Success:** `#98971A` (Green)
+- **Warning:** `#D79921` (Yellow)
+- **Danger:** `#CC241D` (Red)
+
+## Catppuccin
+
+The [Catppuccin](https://github.com/catppuccin/catppuccin) theme family with pastel colors.
+
+### Catppuccin Latte
+
+```rust
+Theme::CatppuccinLatte
+```
+
+The light variant (Latte).
+
+- **Background:** `#EFF1F5`
+- **Text:** `#4C4F69`
+- **Primary:** `#1E66F5` (Blue)
+- **Success:** `#40A02B` (Green)
+- **Warning:** `#DF8E1D` (Yellow)
+- **Danger:** `#D20F39` (Red)
+
+### Catppuccin Frappé
+
+```rust
+Theme::CatppuccinFrappe
+```
+
+A medium-contrast dark variant.
+
+- **Background:** `#303446`
+- **Text:** `#C6D0F5`
+- **Primary:** `#8CAAEE` (Blue)
+- **Success:** `#A6D189` (Green)
+- **Warning:** `#E5C890` (Yellow)
+- **Danger:** `#E78284` (Red)
+
+### Catppuccin Macchiato
+
+```rust
+Theme::CatppuccinMacchiato
+```
+
+A darker variant with warm tones.
+
+- **Background:** `#24273A`
+- **Text:** `#CAD3F5`
+- **Primary:** `#8AADF4` (Blue)
+- **Success:** `#A6DA95` (Green)
+- **Warning:** `#EED49F` (Yellow)
+- **Danger:** `#ED8796` (Red)
+
+### Catppuccin Mocha
+
+```rust
+Theme::CatppuccinMocha
+```
+
+The darkest Catppuccin variant.
+
+- **Background:** `#1E1E2E`
+- **Text:** `#CDD6F4`
+- **Primary:** `#89B4FA` (Blue)
+- **Success:** `#A6E3A1` (Green)
+- **Warning:** `#F9E2AF` (Yellow)
+- **Danger:** `#F38BA8` (Red)
+
+## Tokyo Night
+
+The [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) theme family inspired by Tokyo's night skyline.
+
+### Tokyo Night
+
+```rust
+Theme::TokyoNight
+```
+
+The standard dark variant.
+
+- **Background:** `#1A1B26`
+- **Text:** `#9AA5CE`
+- **Primary:** `#2AC3DE` (Blue)
+- **Success:** `#9ECE6A` (Green)
+- **Warning:** `#E0AF68` (Yellow)
+- **Danger:** `#F7768E` (Red)
+
+### Tokyo Night Storm
+
+```rust
+Theme::TokyoNightStorm
+```
+
+A slightly lighter storm variant.
+
+- **Background:** `#24283B`
+- **Text:** `#9AA5CE`
+- **Primary:** `#2AC3DE` (Blue)
+- **Success:** `#9ECE6A` (Green)
+- **Warning:** `#E0AF68` (Yellow)
+- **Danger:** `#F7768E` (Red)
+
+### Tokyo Night Light
+
+```rust
+Theme::TokyoNightLight
+```
+
+The light variant of Tokyo Night.
+
+- **Background:** `#D5D6DB`
+- **Text:** `#565A6E`
+- **Primary:** `#166775` (Blue)
+- **Success:** `#485E30` (Green)
+- **Warning:** `#8F5E15` (Yellow)
+- **Danger:** `#8C4351` (Red)
+
+## Kanagawa
+
+The [Kanagawa](https://github.com/rebelot/kanagawa.nvim) theme family inspired by the famous painting "The Great Wave off Kanagawa".
+
+### Kanagawa Wave
+
+```rust
+Theme::KanagawaWave
+```
+
+The standard dark variant.
+
+- **Background:** `#1F1F28`
+- **Text:** `#DCD7BA`
+- **Primary:** `#7FB4CA` (Wave Blue)
+- **Success:** `#76946A` (Autumn Green)
+- **Warning:** `#FF9E3B` (Ronin Yellow)
+- **Danger:** `#C34043` (Autumn Red)
+
+### Kanagawa Dragon
+
+```rust
+Theme::KanagawaDragon
+```
+
+A deeper, darker variant.
+
+- **Background:** `#181616`
+- **Text:** `#C5C9C5`
+- **Primary:** `#223249` (Wave Blue 1)
+- **Success:** `#8A9A7B` (Dragon Green)
+- **Warning:** `#FF9E3B` (Ronin Yellow)
+- **Danger:** `#C4746E` (Dragon Red)
+
+### Kanagawa Lotus
+
+```rust
+Theme::KanagawaLotus
+```
+
+The light variant.
+
+- **Background:** `#F2ECBC`
+- **Text:** `#545464`
+- **Primary:** `#4D699B` (Lotus Blue)
+- **Success:** `#6F894E` (Lotus Green)
+- **Warning:** `#E98A00` (Lotus Orange)
+- **Danger:** `#C84053` (Lotus Red)
+
+## Moonfly & Nightfly
+
+### Moonfly
+
+```rust
+Theme::Moonfly
+```
+
+A dark theme from [vim-moonfly-colors](https://github.com/bluz71/vim-moonfly-colors).
+
+- **Background:** `#080808`
+- **Text:** `#BDBDBD`
+- **Primary:** `#80A0FF` (Blue)
+- **Success:** `#8CC85F` (Green)
+- **Warning:** `#E3C78A` (Yellow)
+- **Danger:** `#FF5454` (Red)
+
+### Nightfly
+
+```rust
+Theme::Nightfly
+```
+
+A dark theme from [vim-nightfly-colors](https://github.com/bluz71/vim-nightfly-colors).
+
+- **Background:** `#011627`
+- **Text:** `#BDC1C6`
+- **Primary:** `#82AAFF` (Blue)
+- **Success:** `#A1CD5E` (Green)
+- **Warning:** `#E3D18A` (Yellow)
+- **Danger:** `#FC514E` (Red)
+
+## Oxocarbon
+
+```rust
+Theme::Oxocarbon
+```
+
+A dark theme from [oxocarbon.nvim](https://github.com/nyoom-engineering/oxocarbon.nvim).
+
+- **Background:** `#232323`
+- **Text:** `#D0D0D0`
+- **Primary:** `#00B4FF` (Blue)
+- **Success:** `#00C15A` (Green)
+- **Warning:** `#BE95FF` (Purple)
+- **Danger:** `#F62D0F` (Red)
+
+## Ferra
+
+```rust
+Theme::Ferra
+```
+
+A dark theme from [Ferra](https://github.com/casperstorm/ferra).
+
+- **Background:** `#2B292D`
+- **Text:** `#FECDB2`
+- **Primary:** `#D1D1E0`
+- **Success:** `#B1B695`
+- **Warning:** `#F5D76E` (Honey)
+- **Danger:** `#E06B75`
+
+## Using Themes
+
+### Direct Usage
+
+```rust
+use iced::Theme;
+
+fn theme(_state: &State) -> Theme {
+    Theme::TokyoNight
+}
+```
+
+### Theme Selection
+
+```rust
+const ALL_THEMES: &[Theme] = Theme::ALL;
+
+for theme in ALL_THEMES {
+    println!("{}", theme);
+}
+```
+
+### Environment Variable
+
+```bash
+ICED_THEME=Dracula cargo run
+ICED_THEME="Catppuccin Mocha" cargo run
+```
+
+## See Also
+
+- [Theme Overview](/api/theme/overview) - Understanding themes
+- [Custom Themes](/api/theme/custom-themes) - Creating your own theme
+- [Palette](/api/theme/palette) - Color palette structure

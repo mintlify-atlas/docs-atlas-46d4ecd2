@@ -1,0 +1,269 @@
+---
+title: Theme Overview
+description: Understanding the theme system in Iced
+---
+
+# Theme
+
+The `Theme` enum represents a built-in theme for your Iced application. Themes control the visual appearance of all widgets through color palettes and extended color sets.
+
+## Theme Enum
+
+```rust
+pub enum Theme {
+    Light,
+    Dark,
+    Dracula,
+    Nord,
+    SolarizedLight,
+    SolarizedDark,
+    GruvboxLight,
+    GruvboxDark,
+    CatppuccinLatte,
+    CatppuccinFrappe,
+    CatppuccinMacchiato,
+    CatppuccinMocha,
+    TokyoNight,
+    TokyoNightStorm,
+    TokyoNightLight,
+    KanagawaWave,
+    KanagawaDragon,
+    KanagawaLotus,
+    Moonfly,
+    Nightfly,
+    Oxocarbon,
+    Ferra,
+    Custom(Arc<Custom>),
+}
+```
+
+See the [Built-in Themes](/api/theme/built-in-themes) page for details on each variant.
+
+## Theme Methods
+
+### Getting Palettes
+
+```rust
+pub fn palette(&self) -> Palette
+```
+Returns the base `Palette` of the theme with six core colors (background, text, primary, success, warning, danger).
+
+```rust
+pub fn extended_palette(&self) -> &palette::Extended
+```
+Returns the `Extended` palette with derived color variations for all color categories.
+
+### Creating Custom Themes
+
+```rust
+pub fn custom(name: impl Into<Cow<'static, str>>, palette: Palette) -> Self
+```
+Creates a new custom theme from a `Palette`. The extended palette is automatically generated.
+
+```rust
+pub fn custom_with_fn(
+    name: impl Into<Cow<'static, str>>,
+    palette: Palette,
+    generate: impl FnOnce(Palette) -> palette::Extended,
+) -> Self
+```
+Creates a new custom theme with a custom extended palette generator function.
+
+See [Custom Themes](/api/theme/custom-themes) for more information.
+
+## Base Trait
+
+The `Base` trait defines the core functionality every theme must provide:
+
+```rust
+pub trait Base {
+    fn default(preference: Mode) -> Self;
+    fn mode(&self) -> Mode;
+    fn base(&self) -> Style;
+    fn palette(&self) -> Option<Palette>;
+    fn name(&self) -> &str;
+}
+```
+
+### Mode
+
+```rust
+pub enum Mode {
+    None,
+    Light,
+    Dark,
+}
+```
+
+Indicates whether a theme has light or dark tones.
+
+### Style
+
+```rust
+pub struct Style {
+    pub background_color: Color,
+    pub text_color: Color,
+}
+```
+
+The base style containing the default background and text colors.
+
+## Using Themes
+
+### Setting the Default Theme
+
+```rust
+use iced::Theme;
+
+fn main() -> iced::Result {
+    iced::application(new, update, view)
+        .theme(|_state| Theme::TokyoNight)
+        .run()
+}
+```
+
+### Dynamic Theme Switching
+
+```rust
+struct State {
+    theme: Theme,
+}
+
+enum Message {
+    ThemeChanged(Theme),
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::ThemeChanged(theme) => {
+            state.theme = theme;
+        }
+    }
+}
+
+fn theme(state: &State) -> Theme {
+    state.theme.clone()
+}
+
+fn main() -> iced::Result {
+    iced::application(State::new, update, view)
+        .theme(theme)
+        .run()
+}
+```
+
+### Environment Variable
+
+You can set the default theme using the `ICED_THEME` environment variable:
+
+```bash
+ICED_THEME=TokyoNight cargo run
+```
+
+## Widget Styling
+
+Themes work together with widget styling functions. Most widgets accept a `style` method that takes a closure:
+
+```rust
+use iced::widget::button;
+
+button("Click me")
+    .style(|theme, status| {
+        let palette = theme.extended_palette();
+        
+        button::Style::default()
+            .with_background(palette.primary.strong.color)
+    })
+```
+
+See the widget documentation for built-in styling functions like:
+- `button::primary`
+- `button::success`
+- `container::rounded_box`
+- `text::danger`
+
+## Examples
+
+### Iterating All Built-in Themes
+
+```rust
+use iced::Theme;
+
+for theme in Theme::ALL {
+    println!("{}", theme.name());
+}
+```
+
+### Accessing Theme Colors
+
+```rust
+use iced::{Theme, Color};
+
+let theme = Theme::TokyoNight;
+let palette = theme.palette();
+
+println!("Background: {:?}", palette.background);
+println!("Primary: {:?}", palette.primary);
+
+let extended = theme.extended_palette();
+println!("Primary Strong: {:?}", extended.primary.strong.color);
+println!("Is Dark: {}", extended.is_dark);
+```
+
+### Creating a Theme Picker
+
+```rust
+use iced::widget::{column, pick_list};
+use iced::Theme;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ThemeChoice {
+    Light,
+    Dark,
+    TokyoNight,
+    Dracula,
+}
+
+impl ThemeChoice {
+    const ALL: &'static [Self] = &[
+        Self::Light,
+        Self::Dark,
+        Self::TokyoNight,
+        Self::Dracula,
+    ];
+    
+    fn to_theme(self) -> Theme {
+        match self {
+            Self::Light => Theme::Light,
+            Self::Dark => Theme::Dark,
+            Self::TokyoNight => Theme::TokyoNight,
+            Self::Dracula => Theme::Dracula,
+        }
+    }
+}
+
+impl std::fmt::Display for ThemeChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_theme().name())
+    }
+}
+
+fn view(state: &State) -> Element<Message> {
+    column![
+        "Choose a theme:",
+        pick_list(
+            ThemeChoice::ALL,
+            Some(state.theme_choice),
+            Message::ThemeChanged
+        )
+    ]
+    .into()
+}
+```
+
+## See Also
+
+- [Built-in Themes](/api/theme/built-in-themes) - All available theme variants
+- [Custom Themes](/api/theme/custom-themes) - Creating your own themes
+- [Palette](/api/theme/palette) - Color palette structure
+- [Widget Styling](/guides/styling) - Styling individual widgets

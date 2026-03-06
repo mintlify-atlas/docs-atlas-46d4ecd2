@@ -1,0 +1,449 @@
+---
+title: Subscriptions
+description: Subscribe to passive sources of data like time ticks and runtime events
+---
+
+Subscriptions allow applications to receive data from passive sources—like time ticks, keyboard events, or runtime events. They are declarative streams that the runtime manages.
+
+## Basic Usage
+
+Define a `subscription` function and use the `Application` builder:
+
+```rust
+use iced::window;
+use iced::{Size, Subscription};
+
+#[derive(Debug, Clone)]
+enum Message {
+    WindowResized(Size),
+}
+
+pub fn main() -> iced::Result {
+    iced::application(new, update, view)
+        .subscription(subscription)
+        .run()
+}
+
+fn subscription(state: &State) -> Subscription<Message> {
+    window::resize_events()
+        .map(|(_id, size)| Message::WindowResized(size))
+}
+```
+
+## Subscription::none
+
+When no subscriptions are active:
+
+```rust
+fn subscription(state: &State) -> Subscription<Message> {
+    Subscription::none()
+}
+```
+
+## Time Subscriptions
+
+Subscribe to time intervals:
+
+```rust
+use iced::time::{self, Duration, Instant, milliseconds};
+use iced::Subscription;
+
+#[derive(Debug, Clone)]
+enum Message {
+    Tick(Instant),
+}
+
+fn subscription(state: &State) -> Subscription<Message> {
+    // Tick every 10 milliseconds
+    time::every(milliseconds(10)).map(Message::Tick)
+}
+```
+
+## Conditional Subscriptions
+
+Only subscribe when needed:
+
+```rust
+use iced::time::{self, milliseconds};
+use iced::Subscription;
+
+enum State {
+    Idle,
+    Running { last_tick: Instant },
+}
+
+fn subscription(state: &State) -> Subscription<Message> {
+    match state {
+        State::Idle => Subscription::none(),
+        State::Running { .. } => {
+            time::every(milliseconds(10)).map(Message::Tick)
+        }
+    }
+}
+```
+
+## Keyboard Subscriptions
+
+Listen to keyboard events:
+
+```rust
+use iced::keyboard;
+
+fn subscription(state: &State) -> Subscription<Message> {
+    keyboard::listen().filter_map(|event| {
+        use keyboard::key;
+
+        let keyboard::Event::KeyPressed {
+            modified_key,
+            repeat: false,
+            ..
+        } = event
+        else {
+            return None;
+        };
+
+        match modified_key {
+            keyboard::Key::Named(key::Named::Space) => {
+                Some(Message::Toggle)
+            }
+            keyboard::Key::Character("r") => {
+                Some(Message::Reset)
+            }
+            keyboard::Key::Named(key::Named::ArrowLeft) => {
+                Some(Message::Previous)
+            }
+            keyboard::Key::Named(key::Named::ArrowRight) => {
+                Some(Message::Next)
+            }
+            _ => None,
+        }
+    })
+}
+```
+
+## Batching Subscriptions
+
+Combine multiple subscriptions:
+
+```rust
+use iced::Subscription;
+
+fn subscription(state: &State) -> Subscription<Message> {
+    Subscription::batch(vec![
+        time::every(milliseconds(10)).map(Message::Tick),
+        keyboard::listen().filter_map(handle_hotkey),
+        window::resize_events().map(|(_, size)| Message::Resized(size)),
+    ])
+}
+```
+
+## Custom Subscriptions
+
+Create your own subscriptions using `Subscription::run`:
+
+```rust
+use iced::Subscription;
+use iced::stream;
+
+enum Message {
+    ServerMessage(String),
+}
+
+fn subscription(state: &State) -> Subscription<Message> {
+    Subscription::run(websocket_connection)
+}
+
+fn websocket_connection() -> impl Stream<Item = Message> {
+    stream::channel(100, |mut output| async move {
+        // Connect to WebSocket
+        let mut ws = connect_to_server().await;
+        
+        loop {
+            match ws.next().await {
+                Some(msg) => {
+                    let _ = output.send(Message::ServerMessage(msg)).await;
+                }
+                None => break,
+            }
+        }
+    })
+}
+```
+
+## Subscription with State
+
+Use `Subscription::run_with` to access state:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct ConnectionId;
+
+fn subscription(state: &State) -> Subscription<Message> {
+    if state.connected {
+        Subscription::run_with(
+            ConnectionId,
+            || websocket_stream(&state.url)
+        )
+    } else {
+        Subscription::none()
+    }
+}
+```
+
+<Note>
+The first parameter to `run_with` is a unique ID. The subscription is only recreated when this ID changes, ensuring efficient stream management.
+</Note>
+
+## Complete Stopwatch Example
+
+Here's a complete example using subscriptions:
+
+```rust
+use iced::keyboard;
+use iced::time::{self, Duration, Instant, milliseconds};
+use iced::widget::{button, center, column, row, text};
+use iced::{Center, Element, Subscription};
+
+pub fn main() -> iced::Result {
+    iced::application(
+        Stopwatch::default,
+        Stopwatch::update,
+        Stopwatch::view
+    )
+    .subscription(Stopwatch::subscription)
+    .run()
+}
+
+#[derive(Default)]
+struct Stopwatch {
+    duration: Duration,
+    state: State,
+}
+
+#[derive(Default)]
+enum State {
+    #[default]
+    Idle,
+    Ticking { last_tick: Instant },
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Toggle,
+    Reset,
+    Tick(Instant),
+}
+
+impl Stopwatch {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Toggle => match self.state {
+                State::Idle => {
+                    self.state = State::Ticking {
+                        last_tick: Instant::now(),
+                    };
+                }
+                State::Ticking { .. } => {
+                    self.state = State::Idle;
+                }
+            },
+            Message::Tick(now) => {
+                if let State::Ticking { last_tick } = &mut self.state {
+                    self.duration += now - *last_tick;
+                    *last_tick = now;
+                }
+            }
+            Message::Reset => {
+                self.duration = Duration::default();
+            }
+        }
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        let tick = match self.state {
+            State::Idle => Subscription::none(),
+            State::Ticking { .. } => {
+                time::every(milliseconds(10)).map(Message::Tick)
+            }
+        };
+
+        let hotkeys = keyboard::listen().filter_map(|event| {
+            use keyboard::key;
+
+            let keyboard::Event::KeyPressed { modified_key, .. } = event else {
+                return None;
+            };
+
+            match modified_key.as_ref() {
+                keyboard::Key::Named(key::Named::Space) => Some(Message::Toggle),
+                keyboard::Key::Character("r") => Some(Message::Reset),
+                _ => None,
+            }
+        });
+
+        Subscription::batch(vec![tick, hotkeys])
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        const MINUTE: u64 = 60;
+        const HOUR: u64 = 60 * MINUTE;
+
+        let seconds = self.duration.as_secs();
+
+        let duration = text!(
+            "{:0>2}:{:0>2}:{:0>2}.{:0>2}",
+            seconds / HOUR,
+            (seconds % HOUR) / MINUTE,
+            seconds % MINUTE,
+            self.duration.subsec_millis() / 10,
+        )
+        .size(40);
+
+        let button = |label| {
+            button(text(label).align_x(Center))
+                .padding(10)
+                .width(80)
+        };
+
+        let toggle_button = {
+            let label = match self.state {
+                State::Idle => "Start",
+                State::Ticking { .. } => "Stop",
+            };
+
+            button(label).on_press(Message::Toggle)
+        };
+
+        let reset_button = button("Reset")
+            .style(button::danger)
+            .on_press(Message::Reset);
+
+        let controls = row![toggle_button, reset_button].spacing(20);
+
+        let content = column![duration, controls]
+            .align_x(Center)
+            .spacing(20);
+
+        center(content).into()
+    }
+}
+```
+
+## Event Subscriptions
+
+Listen to various runtime events:
+
+```rust
+use iced::event;
+
+// Listen to all events
+event::listen().map(Message::EventOccurred)
+
+// Listen to specific events with filtering
+event::listen().filter_map(|event| {
+    match event {
+        Event::Window(window_event) => {
+            Some(Message::WindowEvent(window_event))
+        }
+        Event::Keyboard(keyboard_event) => {
+            Some(Message::KeyboardEvent(keyboard_event))
+        }
+        _ => None,
+    }
+})
+```
+
+## System Subscriptions
+
+React to system changes:
+
+```rust
+use iced::system;
+
+// Listen to system theme changes
+system::theme_changes().map(Message::SystemThemeChanged)
+```
+
+## The Lifetime of a Subscription
+
+<Warning>
+A `Subscription` is a **declarative** builder. Only the `subscription` function dictates which subscriptions are active at any moment—just like `view` fully dictates the visible widgets.
+</Warning>
+
+Subscriptions are:
+- **Created** when they appear in the subscription function's output
+- **Active** as long as they remain in the output
+- **Destroyed** when they disappear from the output
+
+Example:
+
+```rust
+fn subscription(state: &State) -> Subscription<Message> {
+    if state.running {
+        // This subscription is ONLY active when state.running is true
+        time::every(milliseconds(10)).map(Message::Tick)
+    } else {
+        // When state.running is false, the subscription is destroyed
+        Subscription::none()
+    }
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Make subscriptions conditional">
+    Only activate subscriptions when needed to conserve resources:
+    ```rust
+    match state {
+        State::Idle => Subscription::none(),
+        State::Active => time::every(milliseconds(16)).map(Message::Frame),
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Use stable IDs for run_with">
+    When using `Subscription::run_with`, ensure the ID only changes when you want to recreate the subscription:
+    ```rust
+    Subscription::run_with(
+        state.connection_id,  // Changes only on reconnect
+        || connect_to_server(&state.url)
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Batch related subscriptions">
+    Group related subscriptions together using `Subscription::batch` for better organization:
+    ```rust
+    Subscription::batch(vec![
+        time_subscription(state),
+        input_subscription(state),
+        network_subscription(state),
+    ])
+    ```
+  </Accordion>
+
+  <Accordion title="Use filter_map for event filtering">
+    Transform and filter subscription streams efficiently:
+    ```rust
+    keyboard::listen().filter_map(|event| {
+        // Only pass through relevant events
+        match event {
+            keyboard::Event::KeyPressed { .. } => Some(/* ... */),
+            _ => None,
+        }
+    })
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Tasks" icon="list-check" href="/guides/tasks">
+    Learn about one-off asynchronous operations
+  </Card>
+  <Card title="Custom Widgets" icon="puzzle-piece" href="/guides/custom-widgets">
+    Build your own widgets
+  </Card>
+</CardGroup>

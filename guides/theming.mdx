@@ -1,0 +1,370 @@
+---
+title: Theming
+description: Customize your application's appearance with Iced's theme system
+---
+
+Iced provides a flexible theming system with many built-in themes and support for custom themes.
+
+## Setting a Theme
+
+The default theme of an application can be changed by defining a `theme` function:
+
+```rust
+use iced::Theme;
+
+pub fn main() -> iced::Result {
+    iced::application(new, update, view)
+        .theme(theme)
+        .run()
+}
+
+fn theme(state: &State) -> Theme {
+    Theme::TokyoNight
+}
+```
+
+<Note>
+The `theme` function takes the current state of the application, allowing the returned `Theme` to be completely dynamic—just like `view`.
+</Note>
+
+## Built-in Themes
+
+Iced includes 22 built-in theme variants:
+
+### Light Themes
+- `Theme::Light` - The built-in light variant
+- `Theme::SolarizedLight` - Solarized Light color scheme
+- `Theme::GruvboxLight` - Gruvbox Light color scheme
+- `Theme::CatppuccinLatte` - Catppuccin Latte variant
+- `Theme::TokyoNightLight` - Tokyo Night Light variant
+- `Theme::KanagawaLotus` - Kanagawa Lotus variant
+
+### Dark Themes
+- `Theme::Dark` - The built-in dark variant
+- `Theme::Dracula` - Dracula color scheme
+- `Theme::Nord` - Nord color scheme
+- `Theme::SolarizedDark` - Solarized Dark color scheme
+- `Theme::GruvboxDark` - Gruvbox Dark color scheme
+- `Theme::CatppuccinFrappe` - Catppuccin Frappé variant
+- `Theme::CatppuccinMacchiato` - Catppuccin Macchiato variant
+- `Theme::CatppuccinMocha` - Catppuccin Mocha variant
+- `Theme::TokyoNight` - Tokyo Night variant
+- `Theme::TokyoNightStorm` - Tokyo Night Storm variant
+- `Theme::KanagawaWave` - Kanagawa Wave variant
+- `Theme::KanagawaDragon` - Kanagawa Dragon variant
+- `Theme::Moonfly` - Moonfly color scheme
+- `Theme::Nightfly` - Nightfly color scheme
+- `Theme::Oxocarbon` - Oxocarbon color scheme
+- `Theme::Ferra` - Ferra color scheme
+
+### Listing All Themes
+
+```rust
+// Access all built-in themes
+for theme in Theme::ALL {
+    println!("{}", theme.name());
+}
+
+// Use in a pick list
+pick_list(
+    self.theme.as_ref(),
+    Theme::ALL,
+    Theme::to_string
+)
+.on_select(Message::ThemeSelected)
+.placeholder("Theme")
+```
+
+## Dynamic Theming
+
+You can change themes at runtime by storing the theme in your state:
+
+```rust
+struct State {
+    theme: Option<Theme>,
+    // other fields...
+}
+
+enum Message {
+    ThemeSelected(Theme),
+    // other messages...
+}
+
+fn update(state: &mut State, message: Message) {
+    match message {
+        Message::ThemeSelected(theme) => {
+            state.theme = Some(theme);
+        }
+        // other messages...
+    }
+}
+
+fn theme(state: &State) -> Option<Theme> {
+    state.theme.clone()
+}
+
+fn view(state: &State) -> Element<'_, Message> {
+    pick_list(
+        state.theme.as_ref(),
+        Theme::ALL,
+        Theme::to_string
+    )
+    .on_select(Message::ThemeSelected)
+    .placeholder("Select Theme")
+    .into()
+}
+```
+
+## Custom Themes
+
+You can create your own custom theme from a `Palette`:
+
+```rust
+use iced::{Theme, Color};
+use iced::theme::Palette;
+
+fn theme(state: &State) -> Theme {
+    let palette = Palette {
+        background: Color::from_rgb(0.1, 0.1, 0.15),
+        text: Color::from_rgb(0.9, 0.9, 0.95),
+        primary: Color::from_rgb(0.2, 0.6, 1.0),
+        success: Color::from_rgb(0.2, 0.8, 0.4),
+        danger: Color::from_rgb(0.9, 0.2, 0.2),
+    };
+
+    Theme::custom("My Custom Theme", palette)
+}
+```
+
+### Custom Theme with Extended Palette Generator
+
+For more control over the extended palette:
+
+```rust
+use iced::theme::palette;
+
+fn theme(state: &State) -> Theme {
+    let palette = Palette {
+        background: Color::from_rgb(0.1, 0.1, 0.15),
+        text: Color::from_rgb(0.9, 0.9, 0.95),
+        primary: Color::from_rgb(0.2, 0.6, 1.0),
+        success: Color::from_rgb(0.2, 0.8, 0.4),
+        danger: Color::from_rgb(0.9, 0.2, 0.2),
+    };
+
+    Theme::custom_with_fn(
+        "My Advanced Theme",
+        palette,
+        |palette| {
+            // Custom extended palette generation
+            palette::Extended::generate(palette)
+        }
+    )
+}
+```
+
+## Working with Palettes
+
+### Basic Palette
+
+```rust
+let palette = theme.palette();
+
+// Standard colors
+let bg = palette.background;
+let text = palette.text;
+let primary = palette.primary;
+let success = palette.success;
+let danger = palette.danger;
+```
+
+### Extended Palette
+
+The extended palette provides color variants for richer theming:
+
+```rust
+let palette = theme.extended_palette();
+
+// Background variants
+palette.background.base.color     // Base background
+palette.background.weak.color     // Lighter variant
+palette.background.strong.color   // Darker variant
+palette.background.base.text      // Text color on background
+
+// Primary color variants
+palette.primary.base.color
+palette.primary.weak.color
+palette.primary.strong.color
+palette.primary.base.text
+
+// Success, danger, warning variants
+palette.success.base.color
+palette.danger.base.color
+
+// Check if theme is dark
+if palette.is_dark {
+    // Dark theme specific logic
+}
+```
+
+## Theme Mode
+
+Get the mode (light/dark) of a theme:
+
+```rust
+use iced::theme::{Base, Mode};
+
+let mode = theme.mode();
+
+match mode {
+    Mode::Light => println!("Light theme"),
+    Mode::Dark => println!("Dark theme"),
+    Mode::None => println!("Unspecified"),
+}
+```
+
+## System Theme Detection
+
+Iced can use the system theme preference:
+
+```rust
+use iced::theme::{Base, Mode};
+
+// Returns default theme based on system preference
+let theme = Theme::default(Mode::Dark);
+```
+
+## Environment Variable
+
+You can set the `ICED_THEME` environment variable to override the default theme:
+
+```bash
+# Use Tokyo Night theme
+ICED_THEME="Tokyo Night" cargo run
+
+# Use Dracula theme
+ICED_THEME="Dracula" cargo run
+```
+
+## Complete Theming Example
+
+Here's a complete application with theme switching:
+
+```rust
+use iced::widget::{button, column, pick_list, text};
+use iced::{Element, Theme};
+
+pub fn main() -> iced::Result {
+    iced::application(App::default, App::update, App::view)
+        .theme(App::theme)
+        .run()
+}
+
+#[derive(Default)]
+struct App {
+    theme: Option<Theme>,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    ThemeSelected(Theme),
+    NextTheme,
+    PreviousTheme,
+}
+
+impl App {
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::ThemeSelected(theme) => {
+                self.theme = Some(theme);
+            }
+            Message::NextTheme => {
+                let current = Theme::ALL
+                    .iter()
+                    .position(|t| self.theme.as_ref() == Some(t));
+                
+                self.theme = Some(
+                    Theme::ALL[current.map(|i| i + 1).unwrap_or(0) % Theme::ALL.len()]
+                        .clone()
+                );
+            }
+            Message::PreviousTheme => {
+                let current = Theme::ALL
+                    .iter()
+                    .position(|t| self.theme.as_ref() == Some(t))
+                    .unwrap_or(0);
+                
+                let index = if current == 0 {
+                    Theme::ALL.len() - 1
+                } else {
+                    current - 1
+                };
+                
+                self.theme = Some(Theme::ALL[index].clone());
+            }
+        }
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        column![
+            text("Theme Switcher").size(24),
+            pick_list(
+                self.theme.as_ref(),
+                Theme::ALL,
+                Theme::to_string
+            )
+            .on_select(Message::ThemeSelected)
+            .placeholder("Select Theme"),
+            button("Previous Theme")
+                .on_press(Message::PreviousTheme),
+            button("Next Theme")
+                .on_press(Message::NextTheme),
+        ]
+        .spacing(20)
+        .padding(20)
+        .into()
+    }
+
+    fn theme(&self) -> Option<Theme> {
+        self.theme.clone()
+    }
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always use theme colors in styles">
+    Extract colors from `theme.palette()` or `theme.extended_palette()` instead of hardcoding colors. This ensures your custom styles adapt to theme changes.
+  </Accordion>
+
+  <Accordion title="Test with multiple themes">
+    Test your application with both light and dark themes to ensure good contrast and readability.
+  </Accordion>
+
+  <Accordion title="Store theme in state for persistence">
+    Store the selected theme in your application state and optionally persist it to disk so users don't have to reselect it on each launch.
+  </Accordion>
+
+  <Accordion title="Use system theme as default">
+    Consider using `Theme::default()` with system mode detection to respect user preferences:
+    ```rust
+    use iced::system;
+    
+    fn subscription(state: &State) -> Subscription<Message> {
+        system::theme_changes().map(Message::SystemThemeChanged)
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Styling" icon="paintbrush" href="/guides/styling">
+    Learn how to style individual widgets
+  </Card>
+  <Card title="Subscriptions" icon="rss" href="/guides/subscriptions">
+    React to system theme changes
+  </Card>
+</CardGroup>

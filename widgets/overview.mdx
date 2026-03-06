@@ -1,0 +1,132 @@
+---
+title: Widgets Overview
+description: Introduction to Iced's widget system and available components
+---
+
+Iced provides a rich collection of widgets for building graphical user interfaces. All widgets follow a consistent builder pattern and are designed to be composable, type-safe, and easy to use.
+
+## Core Concepts
+
+### Builder Pattern
+
+All widgets in Iced use a builder pattern for configuration:
+
+```rust
+button("Click me")
+    .on_press(Message::ButtonPressed)
+    .padding(10)
+    .width(Length::Fill)
+```
+
+### The Element Type
+
+Widgets are converted into `Element<Message>` to be used in your view:
+
+```rust
+fn view(&self) -> Element<Message> {
+    button("Hello").into()
+}
+```
+
+## Widget Categories
+
+### Layout Widgets
+
+Widgets that arrange other widgets:
+
+- **[Row](/widgets/row-and-column)** - Horizontal layout
+- **[Column](/widgets/row-and-column)** - Vertical layout
+- **[Container](/widgets/container)** - Single child with alignment and styling
+- **[Scrollable](/widgets/scrollable)** - Scrollable content area
+- **Stack** - Layered children
+- **Grid** - Grid layout
+- **Float** - Floating positioned elements
+
+### Input Widgets
+
+Widgets for user interaction:
+
+- **[Button](/widgets/button)** - Clickable button
+- **[TextInput](/widgets/text-input)** - Single-line text input
+- **TextEditor** - Multi-line text editor
+- **Checkbox** - Boolean checkbox
+- **Radio** - Radio button selection
+- **Toggler** - Toggle switch
+- **Slider** - Horizontal slider
+- **VerticalSlider** - Vertical slider
+- **PickList** - Dropdown selection
+- **ComboBox** - Searchable dropdown
+
+### Display Widgets
+
+Widgets for displaying content:
+
+- **[Text](/widgets/text)** - Text display
+- **Image** - Image display
+- **Svg** - SVG rendering
+- **ProgressBar** - Progress indicator
+- **QRCode** - QR code display
+- **Rule** - Horizontal or vertical line
+- **Space** - Empty space
+
+### Advanced Widgets
+
+Specialized widgets:
+
+- **[Canvas](/widgets/canvas)** - 2D graphics drawing
+- **PaneGrid** - Resizable panes
+- **Tooltip** - Hover tooltips
+- **MouseArea** - Custom mouse interaction
+- **Responsive** - Responsive layout
+- **Markdown** - Markdown rendering
+- **Table** - Table display
+
+## Common Properties
+
+Most widgets support these common methods:
+
+### Sizing
+
+```rust
+widget
+    .width(Length::Fill)           // Take all available width
+    .height(Length::Shrink)        // Fit content height
+    .width(Length::Fixed(200.0))   // Fixed width in pixels
+```
+
+### Padding
+
+```rust
+widget
+    .padding(10)                   // All sides
+    .padding([10, 20])            // Vertical, horizontal
+    .padding([10, 20, 30, 40])    // Top, right, bottom, left
+```
+
+### Styling
+
+```rust
+button("Styled")
+    .style(button::primary)        // Use theme style
+    .style(|theme, status| {       // Custom style
+        button::Style {
+            background: Some(Color::from_rgb(0.2, 0.5, 0.8).into()),
+            ..button::primary(theme, status)
+        }
+    })
+```
+
+## Length Types
+
+Iced uses the `Length` enum for sizing:
+
+- **`Length::Shrink`** - Fit the content
+- **`Length::Fill`** - Take all available space
+- **`Length::FillPortion(u16)`** - Take a proportional amount
+- **`Length::Fixed(f32)`** - Fixed size in pixels
+
+## Next Steps
+
+- Explore individual [widget pages](/widgets/all-widgets)
+- Learn about [styling and theming](/guides/styling)
+- See [layout examples](/guides/layout)

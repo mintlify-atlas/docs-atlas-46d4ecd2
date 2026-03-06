@@ -1,0 +1,232 @@
+---
+title: 'Button'
+description: 'A clickable button widget that produces messages when pressed'
+---
+
+## Overview
+
+A `Button` is a generic widget that produces a message when pressed. Buttons can contain any content (text, icons, or other widgets) and support various styling options.
+
+## Constructor
+
+### `button::Button::new`
+
+```rust
+pub fn new(
+    content: impl Into<Element<'a, Message, Theme, Renderer>>
+) -> Self
+```
+
+Creates a new `Button` with the given content.
+
+**Parameters:**
+- `content` - The content to display inside the button (text, icon, or any widget)
+
+## Builder Methods
+
+### Event Handlers
+
+#### `on_press`
+
+```rust
+pub fn on_press(self, on_press: Message) -> Self
+```
+
+Sets the message that will be produced when the button is pressed. Unless this method is called, the button will be disabled.
+
+#### `on_press_with`
+
+```rust
+pub fn on_press_with(self, on_press: impl Fn() -> Message + 'a) -> Self
+```
+
+Sets a closure that produces the message when the button is pressed. Useful for reducing overhead when creating the message is expensive.
+
+#### `on_press_maybe`
+
+```rust
+pub fn on_press_maybe(self, on_press: Option<Message>) -> Self
+```
+
+Sets the message conditionally. If `None`, the button will be disabled.
+
+### Layout
+
+#### `width`
+
+```rust
+pub fn width(self, width: impl Into<Length>) -> Self
+```
+
+Sets the width of the button.
+
+#### `height`
+
+```rust
+pub fn height(self, height: impl Into<Length>) -> Self
+```
+
+Sets the height of the button.
+
+#### `padding`
+
+```rust
+pub fn padding<P: Into<Padding>>(self, padding: P) -> Self
+```
+
+Sets the padding of the button. Default is `Padding { top: 5.0, bottom: 5.0, right: 10.0, left: 10.0 }`.
+
+### Appearance
+
+#### `clip`
+
+```rust
+pub fn clip(self, clip: bool) -> Self
+```
+
+Sets whether the contents should be clipped on overflow.
+
+#### `style`
+
+```rust
+pub fn style(self, style: impl Fn(&Theme, Status) -> Style + 'a) -> Self
+```
+
+Sets a custom style function for the button.
+
+## Status
+
+The `Status` enum represents the possible states of a button:
+
+```rust
+pub enum Status {
+    Active,    // The button can be pressed
+    Hovered,   // The button is being hovered
+    Pressed,   // The button is being pressed
+    Disabled,  // The button cannot be pressed
+}
+```
+
+## Style
+
+The `Style` struct defines the visual appearance:
+
+```rust
+pub struct Style {
+    pub background: Option<Background>,
+    pub text_color: Color,
+    pub border: Border,
+    pub shadow: Shadow,
+    pub snap: bool,
+}
+```
+
+### Built-in Styles
+
+The default theme provides several pre-defined button styles:
+
+- `primary` - A primary button with strong color
+- `secondary` - A secondary button with muted color
+- `success` - A success button (green)
+- `warning` - A warning button (yellow/orange)
+- `danger` - A danger button (red)
+- `text` - A text-only button without background
+- `background` - A button using background shades
+- `subtle` - A subtle button with weak colors
+
+## Examples
+
+### Basic Button
+
+```rust
+use iced::widget::button;
+
+#[derive(Clone)]
+enum Message {
+    ButtonPressed,
+}
+
+fn view() -> Element<'_, Message> {
+    button("Press me!")
+        .on_press(Message::ButtonPressed)
+        .into()
+}
+```
+
+### Disabled Button
+
+```rust
+// No on_press handler = disabled
+button("I am disabled!")
+```
+
+### Conditionally Enabled
+
+```rust
+let can_submit = !input.is_empty();
+
+button("Submit")
+    .on_press_maybe(can_submit.then(|| Message::Submit))
+```
+
+### Styled Button
+
+```rust
+button("Custom")
+    .style(button::danger)  // Using built-in style
+    .padding(15)
+    .width(Length::Fill)
+```
+
+### Button with Custom Content
+
+```rust
+use iced::widget::{button, row, text};
+
+button(
+    row![
+        text("📁"),
+        text("Open File"),
+    ]
+    .spacing(10)
+)
+.on_press(Message::OpenFile)
+```
+
+### Custom Style Function
+
+```rust
+button("Custom Style")
+    .style(|theme, status| {
+        let palette = theme.extended_palette();
+        
+        button::Style {
+            background: Some(Background::Color(
+                if matches!(status, button::Status::Pressed) {
+                    Color::from_rgb(0.0, 0.4, 0.8)
+                } else {
+                    Color::from_rgb(0.0, 0.5, 1.0)
+                }
+            )),
+            text_color: Color::WHITE,
+            border: Border {
+                radius: 5.0.into(),
+                width: 2.0,
+                color: Color::BLACK,
+            },
+            ..button::Style::default()
+        }
+    })
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Checkbox" href="/api/widget/checkbox">
+    For binary toggle inputs
+  </Card>
+  
+  <Card title="Text Input" href="/api/widget/text-input">
+    For text entry
+  </Card>
+</CardGroup>
